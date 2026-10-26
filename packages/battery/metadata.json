@@ -1,0 +1,21 @@
+{
+  "KPackageStructure": "Plasma/Applet",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Email": "zinczorphin@gmail.com",
+        "Name": "Jack Faith"
+      }
+    ],
+    "Category": "Examples",
+    "Description": "Battery rings for your computer and the devices connected to it, with a frosted-glass backdrop. Stretch it wide to see up to four devices side by side.",
+    "EnabledByDefault": true,
+    "Icon": "/icon.png",
+    "Id": "com.jaxparrow07.macoswidgets.battery",
+    "License": "GPL-3.0",
+    "Name": "macOS Battery",
+    "Version": "1.0",
+    "Website": "https://github.com/jaxparrow07/liquidglass-kde-widgets"
+  },
+  "X-Plasma-API-Minimum-Version": "6.0"
+}

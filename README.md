@@ -121,6 +121,7 @@ Available package names:
 | Package | Widget |
 |---|---|
 | `calendar` | Calendar |
+| `battery` | Battery |
 | `clock-analog` / `clock-analog-2` / `clock-analog-3` | Analog clocks I / II / III |
 | `clock-digital` | Digital clock |
 | `city-1` / `city-2` / `city-3` / `city-digital` | World / City clocks |

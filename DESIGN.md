@@ -91,6 +91,11 @@ Rules:
 - `buttonIcon`: neutral/cancel button icon color.
 - `cancelButtonBg`: neutral/cancel button background.
 
+### Battery tokens
+- `batteryRing`: ring arc color (green).
+- `batteryRingSaver`: ring arc color while the power-saver profile is on (yellow).
+- `batteryTrack`: faint full circle behind the arc (white on dark, dark on light).
+
 ## Typography
 
 - Use the bundled fonts in `1-common/fonts/`, symlinked into each package's `contents/fonts/`

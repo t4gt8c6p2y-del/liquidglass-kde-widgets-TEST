@@ -136,4 +136,14 @@ QtObject {
     readonly property color weatherSeparator: isGlass ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.20)
     readonly property color weatherRangeBarBg: isGlass ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.15)
     readonly property color weatherRangeBarFill: isGlass ? Qt.rgba(1, 1, 1, 0.50) : Qt.rgba(1, 1, 1, 0.60)
+
+    // ── Battery widget tokens ─────────────────────────────────────────
+    // Ring colors follow the iOS Batteries widget: green normally, yellow
+    // while power-saver is on. The track is the faint full circle behind
+    // the arc. Explicit RGBA values (see musicSecondary above).
+    readonly property color batteryRing:      "#34C759"
+    readonly property color batteryRingSaver: "#FFCC00"
+    readonly property color batteryTrack: effectiveLight
+        ? Qt.rgba(0.102, 0.106, 0.118, 0.16)
+        : Qt.rgba(1, 1, 1, 0.20)
 }
