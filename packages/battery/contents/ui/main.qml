@@ -35,6 +35,9 @@ PlasmoidItem {
         source: Qt.resolvedUrl("../fonts/sf_pro_display_regular.otf")
     }
 
+    // Main ring color (config option); power-saver stays yellow.
+    readonly property color mainColor: plasmoid.configuration.ringColor || colors.batteryRing
+
     // ── Data ──────────────────────────────────────────────────────────────
     // Parsed output of scripts/devices.sh: the computer's battery, the
     // peripherals / phones that report one, and the power profile.
@@ -101,12 +104,13 @@ PlasmoidItem {
                     hasValue: root.info.hasBattery,
                     // A computer without battery shows a full ring.
                     percent: root.info.hasBattery ? root.info.percent : 100,
+                    charging: root.info.hasBattery && root.info.charging,
                     saver: root.info.hasBattery && root.info.powerSave
                 }
             }
             const o = i - 1 < otherCount ? root.info.others[i - 1] : null
             if (!o) return null
-            return { kind: o.kind, hasValue: true, percent: o.percent, saver: false }
+            return { kind: o.kind, hasValue: true, percent: o.percent, charging: o.charging, saver: false }
         }
 
         readonly property var slots: {
@@ -116,7 +120,7 @@ PlasmoidItem {
         }
 
         // Wide layout metrics (everything derives from the height).
-        readonly property real wideD: full.height * 0.40
+        readonly property real wideD: full.height * 0.36
         readonly property real wideMargin: full.height * 0.115
         readonly property real widePitch: Math.min(full.height * 0.62,
                                                    (full.width - 2 * wideMargin - wideD) / 3)
@@ -125,11 +129,11 @@ PlasmoidItem {
         function ringRect(i) {
             const s = full.side
             if (mode === "wide") {
-                return { x: wideX0 + i * widePitch, y: full.height * 0.177, d: wideD }
+                return { x: wideX0 + i * widePitch, y: full.height * 0.2, d: wideD }
             }
             if (mode === "grid") {
-                const m = s * 0.09
-                const d = s * 0.36
+                const m = s * 0.10
+                const d = s * 0.33
                 const step = s - 2 * m - d      // distance between ring origins
                 return {
                     x: full.ox + m + (i % 2) * step,
@@ -149,7 +153,7 @@ PlasmoidItem {
                 return {
                     show: slots[i] !== null,
                     x: r.x + full.height * 0.01,
-                    cy: full.height * 0.758,
+                    cy: full.height * 0.73,
                     px: full.height * 0.15,
                     w: widePitch * 0.96
                 }
@@ -211,7 +215,8 @@ PlasmoidItem {
                 empty: dev === null
                 level: dev !== null ? dev.percent / 100 : 0
                 kind: dev !== null ? dev.kind : "generic"
-                arcColor: (dev !== null && dev.saver) ? colors.batteryRingSaver : colors.batteryRing
+                charging: dev !== null && dev.charging
+                arcColor: (dev !== null && dev.saver) ? colors.batteryRingSaver : root.mainColor
                 trackColor: colors.batteryTrack
                 glyphColor: colors.foreground
             }

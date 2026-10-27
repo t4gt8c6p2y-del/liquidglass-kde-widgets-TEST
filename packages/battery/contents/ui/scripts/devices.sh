@@ -3,6 +3,7 @@
 #
 #   UPOWER|<kind>|<name>|<percent>|<state>|<power supply yes/no>
 #   KDECONNECT|<type>|<name>|<percent>|<charging true/false>
+#   IDEVICE|<class>|<name>|<percent>|<charging true/false>   (iPhone/iPad, libimobiledevice)
 #   PROFILE|<power-saver|balanced|performance>
 #
 # Everything is best effort: a missing tool or an unreachable device simply
@@ -58,6 +59,26 @@ if command -v kdeconnect-cli >/dev/null 2>&1 && command -v busctl >/dev/null 2>&
         name=$(busctl --user get-property org.kde.kdeconnect "$base" org.kde.kdeconnect.device name 2>/dev/null | sed 's/^s "\(.*\)"$/\1/')
         type=$(busctl --user get-property org.kde.kdeconnect "$base" org.kde.kdeconnect.device type 2>/dev/null | sed 's/^s "\(.*\)"$/\1/')
         echo "KDECONNECT|$type|$name|$charge|$charging"
+    done
+fi
+
+# ── iPhone / iPad (libimobiledevice: USB cable, or Wi-Fi sync) ─────────────
+# Optional, and the most reliable way to get a fresh iPhone level on Linux.
+if command -v idevice_id >/dev/null 2>&1 && command -v ideviceinfo >/dev/null 2>&1; then
+    T=""; command -v timeout >/dev/null 2>&1 && T="timeout 4"
+    seen=" "
+    for net in "" "-n"; do
+        for udid in $($T idevice_id $net -l 2>/dev/null; [ -n "$net" ] && $T idevice_id -n 2>/dev/null); do
+            case "$seen" in *" $udid "*) continue ;; esac
+            seen="$seen$udid "
+            bat=$($T ideviceinfo $net -u "$udid" -q com.apple.mobile.battery 2>/dev/null)
+            pct=$(echo "$bat" | awk -F': *' '/^BatteryCurrentCapacity:/ {print $2}')
+            [ -z "$pct" ] && continue
+            chg=$(echo "$bat" | awk -F': *' '/^BatteryIsCharging:/ {print $2}')
+            name=$($T ideviceinfo $net -u "$udid" -k DeviceName 2>/dev/null)
+            class=$($T ideviceinfo $net -u "$udid" -k DeviceClass 2>/dev/null)
+            echo "IDEVICE|$class|$name|$pct|$chg"
+        done
     done
 fi
 

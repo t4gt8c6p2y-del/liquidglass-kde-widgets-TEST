@@ -2,13 +2,14 @@ import QtQuick
 
 // A battery ring like the iOS Batteries widget: a faint full track, a rounded
 // arc starting at 12 o'clock and running clockwise, and the device icon in the
-// middle. With `empty: true` only the track is drawn (free slot in the wide
-// layout).
+// middle. While charging, a lightning bolt sits in a gap at the top of the
+// ring. With `empty: true` only the track is drawn (free slot).
 Item {
     id: ring
 
     property real level: 0            // 0..1, animated
     property bool empty: false
+    property bool charging: false
     property string kind: "generic"
     property color arcColor: "#34C759"
     property color trackColor: Qt.rgba(1, 1, 1, 0.2)
@@ -26,17 +27,13 @@ Item {
     onArcColorChanged: arc.requestPaint()
     onTrackColorChanged: arc.requestPaint()
     onEmptyChanged: arc.requestPaint()
+    onChargingChanged: arc.requestPaint()
 
-    Canvas {
+    CrispCanvas {
         id: arc
         anchors.fill: parent
 
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-
-        onPaint: {
-            const ctx = getContext("2d")
-            ctx.reset()
+        onPaint: (ctx) => {
             const d = Math.min(width, height)
             if (d <= 0) return
 
@@ -44,20 +41,47 @@ Item {
             const r = (d - lw) / 2
             const cx = width / 2
             const cy = height / 2
+            const top = -Math.PI / 2
+            const showBolt = ring.charging && !ring.empty
+
+            // Room for the bolt at 12 o'clock: the ring is cut open there.
+            const bh = lw * 2.7
+            const bw = bh * 0.7
+            const cut = showBolt ? (bw / 2 + lw * 0.85) / r : 0
+            const a0 = top + cut
+            const a1 = top + Math.PI * 2 - cut
 
             ctx.lineWidth = lw
             ctx.lineCap = "round"
 
             ctx.strokeStyle = ring.trackColor
             ctx.beginPath()
-            ctx.arc(cx, cy, r, 0, Math.PI * 2)
+            ctx.arc(cx, cy, r, a0, a1, false)
             ctx.stroke()
 
             if (!ring.empty && ring.level > 0) {
-                const start = -Math.PI / 2
                 ctx.strokeStyle = ring.arcColor
                 ctx.beginPath()
-                ctx.arc(cx, cy, r, start, start + Math.PI * 2 * Math.min(1, ring.level), false)
+                ctx.arc(cx, cy, r, a0, a0 + (a1 - a0) * Math.min(1, ring.level), false)
+                ctx.stroke()
+            }
+
+            if (showBolt) {
+                const bx = cx - bw / 2
+                const by = cy - r - bh / 2
+                const P = [[0.62, 0], [0.15, 0.55], [0.47, 0.55], [0.38, 1.0], [0.85, 0.42], [0.53, 0.42]]
+                ctx.fillStyle = ring.arcColor
+                ctx.strokeStyle = ring.arcColor
+                ctx.lineWidth = bh * 0.07
+                ctx.lineJoin = "round"
+                ctx.beginPath()
+                for (let i = 0; i < P.length; i++) {
+                    const px = bx + P[i][0] * bw
+                    const py = by + P[i][1] * bh
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
+                }
+                ctx.closePath()
+                ctx.fill()
                 ctx.stroke()
             }
         }

@@ -141,6 +141,25 @@ function parse(text) {
         }
     }
 
+    // An iPhone/iPad read directly over USB / Wi-Fi is the freshest source:
+    // it replaces any Bluetooth entry for the same device.
+    for (let j = 0; j < lines.length; j++) {
+        const g = lines[j].trim().split("|")
+        if (g[0] !== "IDEVICE" || g.length < 5) continue
+        const pct = _clamp(g[3])
+        if (pct < 0) continue
+        const nm = (g[2] || "").toLowerCase()
+        const phone = g[1] !== "iPad"
+        res.others = res.others.filter(o => !(o.name.toLowerCase() === nm && (o.kind === "phone" || o.kind === "tablet")))
+        res.others.unshift({
+            id: "id:" + g[2],
+            kind: phone ? "phone" : "tablet",
+            name: g[2],
+            percent: pct,
+            charging: g[4] === "true"
+        })
+    }
+
     if (pcCount > 0) {
         res.hasBattery = true
         res.percent = Math.round(pcSum / pcCount)

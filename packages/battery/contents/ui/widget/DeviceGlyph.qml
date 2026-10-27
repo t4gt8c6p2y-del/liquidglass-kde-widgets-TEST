@@ -3,7 +3,7 @@ import QtQuick
 // Outline device icon drawn on a 100x100 grid so it scales with the ring and
 // takes its colour from the theme (`color`). Same stroke style as the phone
 // icon of the iOS Batteries widget: rounded caps, uniform line width.
-Canvas {
+CrispCanvas {
     id: glyph
 
     // laptop, desktop, phone, tablet, headphones, earbuds, mouse, keyboard, watch,
@@ -14,8 +14,6 @@ Canvas {
     // Canvas doesn't repaint on bound property changes by itself.
     onKindChanged: requestPaint()
     onColorChanged: requestPaint()
-    onWidthChanged: requestPaint()
-    onHeightChanged: requestPaint()
 
     function _rrect(ctx, x, y, w, h, r) {
         r = Math.min(r, w / 2, h / 2)
@@ -29,6 +27,20 @@ Canvas {
         ctx.arcTo(x, y + h, x, y + h - r, r)
         ctx.lineTo(x, y + r)
         ctx.arcTo(x, y, x + r, y, r)
+        ctx.closePath()
+    }
+    // Rounded rect with a different radius per corner (tl, tr, br, bl).
+    function _rrect4(ctx, x, y, w, h, tl, tr, br, bl) {
+        ctx.beginPath()
+        ctx.moveTo(x + tl, y)
+        ctx.lineTo(x + w - tr, y)
+        if (tr > 0) ctx.arcTo(x + w, y, x + w, y + tr, tr)
+        ctx.lineTo(x + w, y + h - br)
+        if (br > 0) ctx.arcTo(x + w, y + h, x + w - br, y + h, br)
+        ctx.lineTo(x + bl, y + h)
+        if (bl > 0) ctx.arcTo(x, y + h, x, y + h - bl, bl)
+        ctx.lineTo(x, y + tl)
+        if (tl > 0) ctx.arcTo(x, y, x + tl, y, tl)
         ctx.closePath()
     }
     function _line(ctx, x1, y1, x2, y2) {
@@ -51,9 +63,7 @@ Canvas {
         ctx.restore()
     }
 
-    onPaint: {
-        const ctx = getContext("2d")
-        ctx.reset()
+    onPaint: (ctx) => {
         const s = Math.min(width, height)
         if (s <= 0) return
 
@@ -80,20 +90,16 @@ Canvas {
             break
 
         case "laptop":
-            // MacBook: thick bezel, softly filled screen with notch, slim base
-            ctx.lineWidth = 7
-            _rrect(ctx, 16.5, 21.5, 67, 44, 6); _soft(ctx, 0.30); ctx.stroke()
-            _rrect(ctx, 41, 21, 18, 6, 3); ctx.fill()
-            ctx.beginPath()
-            ctx.moveTo(5, 70)
-            ctx.lineTo(95, 70)
-            ctx.lineTo(95, 73)
-            ctx.arcTo(95, 79, 89, 79, 6)
-            ctx.lineTo(11, 79)
-            ctx.arcTo(5, 79, 5, 73, 6)
-            ctx.closePath()
-            ctx.fill()
+            // MacBook: thick uniform bezel (rounder at the top than the
+            // bottom), softly filled screen with the notch tab, and a slim
+            // base that sits right under the lid and sticks out on both sides.
+            ctx.lineWidth = 6.5
+            _rrect4(ctx, 21.25, 25.25, 57.5, 39.5, 7, 7, 2, 2)
+            _soft(ctx, 0.42); ctx.stroke()
+            _rrect4(ctx, 41, 25, 18, 5.5, 0, 0, 2.75, 2.75); ctx.fill()
+            _rrect4(ctx, 4, 68, 92, 7.5, 1, 1, 5, 5); ctx.fill()
             break
+
         case "desktop":
             _rrect(ctx, 10, 12, 80, 54, 6); ctx.stroke()
             _line(ctx, 50, 66, 50, 82)

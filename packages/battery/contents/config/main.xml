@@ -45,5 +45,9 @@
         <entry name="realtimeRefraction" type="Bool">
             <default>false</default>
         </entry>
+        <!-- Main ring color (replaces the default green). -->
+        <entry name="ringColor" type="String">
+            <default>#34C759</default>
+        </entry>
     </group>
 </kcfg>
