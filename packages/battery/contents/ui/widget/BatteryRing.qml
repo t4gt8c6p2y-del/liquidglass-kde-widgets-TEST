@@ -29,12 +29,17 @@ Item {
     onEmptyChanged: arc.requestPaint()
     onChargingChanged: arc.requestPaint()
 
+    // Drawing area is a bit larger than the ring so the bolt can stick out of
+    // the ring's top edge without being clipped.
+    readonly property real pad: Math.min(width, height) * 0.08
+
     CrispCanvas {
         id: arc
         anchors.fill: parent
+        anchors.margins: -ring.pad
 
         onPaint: (ctx) => {
-            const d = Math.min(width, height)
+            const d = Math.min(width, height) - 2 * ring.pad
             if (d <= 0) return
 
             const lw = d * ring.thickness
@@ -45,9 +50,9 @@ Item {
             const showBolt = ring.charging && !ring.empty
 
             // Room for the bolt at 12 o'clock: the ring is cut open there.
-            const bh = lw * 2.7
-            const bw = bh * 0.7
-            const cut = showBolt ? (bw / 2 + lw * 0.85) / r : 0
+            const bh = lw * 2.6
+            const bw = bh * 0.9
+            const cut = showBolt ? (bw * 0.5 + lw * 0.75) / r : 0
             const a0 = top + cut
             const a1 = top + Math.PI * 2 - cut
 
@@ -69,10 +74,10 @@ Item {
             if (showBolt) {
                 const bx = cx - bw / 2
                 const by = cy - r - bh / 2
-                const P = [[0.62, 0], [0.15, 0.55], [0.47, 0.55], [0.38, 1.0], [0.85, 0.42], [0.53, 0.42]]
+                const P = [[0.556, 0], [0, 0.6], [0.5, 0.6], [0.444, 1.0], [1, 0.4], [0.5, 0.4]]
                 ctx.fillStyle = ring.arcColor
                 ctx.strokeStyle = ring.arcColor
-                ctx.lineWidth = bh * 0.07
+                ctx.lineWidth = bh * 0.09
                 ctx.lineJoin = "round"
                 ctx.beginPath()
                 for (let i = 0; i < P.length; i++) {

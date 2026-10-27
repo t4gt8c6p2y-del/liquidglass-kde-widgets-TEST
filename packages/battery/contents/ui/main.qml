@@ -35,8 +35,11 @@ PlasmoidItem {
         source: Qt.resolvedUrl("../fonts/sf_pro_display_regular.otf")
     }
 
-    // Main ring color (config option); power-saver stays yellow.
+    // Main ring color, and the color used while power-saver is on (both are
+    // config options; the second one can be switched off).
     readonly property color mainColor: plasmoid.configuration.ringColor || colors.batteryRing
+    readonly property color saverColor: plasmoid.configuration.saverColor || colors.batteryRingSaver
+    readonly property bool saverColorEnabled: plasmoid.configuration.saverColorEnabled
 
     // ── Data ──────────────────────────────────────────────────────────────
     // Parsed output of scripts/devices.sh: the computer's battery, the
@@ -122,7 +125,8 @@ PlasmoidItem {
         // Wide layout metrics (everything derives from the height).
         readonly property real wideD: full.height * 0.36
         readonly property real wideMargin: full.height * 0.115
-        readonly property real widePitch: Math.min(full.height * 0.62,
+        // Rings sit close together and the group stays centered.
+        readonly property real widePitch: Math.min(full.height * 0.44,
                                                    (full.width - 2 * wideMargin - wideD) / 3)
         readonly property real wideX0: (full.width - wideD - 3 * widePitch) / 2
 
@@ -132,9 +136,10 @@ PlasmoidItem {
                 return { x: wideX0 + i * widePitch, y: full.height * 0.2, d: wideD }
             }
             if (mode === "grid") {
-                const m = s * 0.10
                 const d = s * 0.33
-                const step = s - 2 * m - d      // distance between ring origins
+                const gap = s * 0.085
+                const step = d + gap            // distance between ring origins
+                const m = (s - 2 * d - gap) / 2 // group stays centered
                 return {
                     x: full.ox + m + (i % 2) * step,
                     y: full.oy + m + Math.floor(i / 2) * step,
@@ -216,7 +221,7 @@ PlasmoidItem {
                 level: dev !== null ? dev.percent / 100 : 0
                 kind: dev !== null ? dev.kind : "generic"
                 charging: dev !== null && dev.charging
-                arcColor: (dev !== null && dev.saver) ? colors.batteryRingSaver : root.mainColor
+                arcColor: (dev !== null && dev.saver && root.saverColorEnabled) ? root.saverColor : root.mainColor
                 trackColor: colors.batteryTrack
                 glyphColor: colors.foreground
             }

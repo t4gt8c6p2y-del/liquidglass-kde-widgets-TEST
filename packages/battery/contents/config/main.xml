@@ -49,5 +49,13 @@
         <entry name="ringColor" type="String">
             <default>#34C759</default>
         </entry>
+        <!-- Ring color of the computer while the power-saver profile is on,
+             and whether it changes color at all. -->
+        <entry name="saverColorEnabled" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="saverColor" type="String">
+            <default>#FFCC00</default>
+        </entry>
     </group>
 </kcfg>

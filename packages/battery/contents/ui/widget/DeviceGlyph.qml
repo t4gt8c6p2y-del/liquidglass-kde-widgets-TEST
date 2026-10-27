@@ -89,17 +89,25 @@ CrispCanvas {
             _line(ctx, 41, 84, 59, 84)
             break
 
-        case "laptop":
-            // MacBook: thick uniform bezel (rounder at the top than the
-            // bottom), softly filled screen with the notch tab, and a slim
-            // base that sits right under the lid and sticks out on both sides.
-            ctx.lineWidth = 6.5
-            _rrect4(ctx, 21.25, 25.25, 57.5, 39.5, 7, 7, 2, 2)
-            _soft(ctx, 0.42); ctx.stroke()
-            _rrect4(ctx, 41, 25, 18, 5.5, 0, 0, 2.75, 2.75); ctx.fill()
-            _rrect4(ctx, 4, 68, 92, 7.5, 1, 1, 5, 5); ctx.fill()
+        case "laptop": {
+            // MacBook (iOS Batteries icon): thin even bezel with rounded top
+            // corners, softly tinted screen, a small trapezoid notch hanging
+            // from the top bezel, and a slim pill-shaped base. The lid sides
+            // run straight down into the base (no gap).
+            const lx = 10.6, lw = 78.8, ly = 21.25, bz = 4.4
+            _rrect4(ctx, lx, ly, lw, 52, 6.5, 6.5, 0, 0); ctx.fill()          // lid
+            ctx.globalCompositeOperation = "destination-out"                   // hollow out the screen
+            _rrect4(ctx, lx + bz, ly + bz, lw - 2 * bz, 45.6, 2.2, 2.2, 0, 0); ctx.fill()
+            ctx.globalCompositeOperation = "source-over"
+            _rrect4(ctx, lx + bz, ly + bz, lw - 2 * bz, 45.6, 2.2, 2.2, 0, 0); _soft(ctx, 0.42)
+            ctx.beginPath()                                                    // notch
+            ctx.moveTo(41, 25.3); ctx.lineTo(59, 25.3); ctx.lineTo(57.6, 27.6)
+            ctx.quadraticCurveTo(57.2, 29.5, 55.2, 29.5); ctx.lineTo(44.8, 29.5)
+            ctx.quadraticCurveTo(42.8, 29.5, 42.4, 27.6)
+            ctx.closePath(); ctx.fill()
+            _rrect(ctx, 0, 71.25, 100, 7.5, 3.75); ctx.fill()                  // base
             break
-
+        }
         case "desktop":
             _rrect(ctx, 10, 12, 80, 54, 6); ctx.stroke()
             _line(ctx, 50, 66, 50, 82)
