@@ -136,7 +136,7 @@ PlasmoidItem {
                 return { x: wideX0 + i * widePitch, y: full.height * 0.177, d: wideD }
             }
             if (mode === "grid") {
-                const d = s * 0.39
+                const d = s * 0.36
                 const gap = s * 0.085
                 const step = d + gap            // distance between ring origins
                 const m = (s - 2 * d - gap) / 2 // group stays centered
