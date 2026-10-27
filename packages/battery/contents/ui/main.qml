@@ -123,20 +123,20 @@ PlasmoidItem {
         }
 
         // Wide layout metrics (everything derives from the height).
-        readonly property real wideD: full.height * 0.36
-        readonly property real wideMargin: full.height * 0.115
+        readonly property real wideD: full.height * 0.40
+        readonly property real wideMargin: full.height * 0.09
         // Rings sit close together and the group stays centered.
-        readonly property real widePitch: Math.min(full.height * 0.44,
+        readonly property real widePitch: Math.min(full.height * 0.48,
                                                    (full.width - 2 * wideMargin - wideD) / 3)
         readonly property real wideX0: (full.width - wideD - 3 * widePitch) / 2
 
         function ringRect(i) {
             const s = full.side
             if (mode === "wide") {
-                return { x: wideX0 + i * widePitch, y: full.height * 0.2, d: wideD }
+                return { x: wideX0 + i * widePitch, y: full.height * 0.177, d: wideD }
             }
             if (mode === "grid") {
-                const d = s * 0.33
+                const d = s * 0.39
                 const gap = s * 0.085
                 const step = d + gap            // distance between ring origins
                 const m = (s - 2 * d - gap) / 2 // group stays centered
@@ -158,7 +158,7 @@ PlasmoidItem {
                 return {
                     show: slots[i] !== null,
                     x: r.x + full.height * 0.01,
-                    cy: full.height * 0.73,
+                    cy: full.height * 0.75,
                     px: full.height * 0.15,
                     w: widePitch * 0.96
                 }
