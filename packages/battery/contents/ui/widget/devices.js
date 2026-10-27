@@ -11,7 +11,7 @@
 //   }
 //
 // `kind` is one of the glyph names understood by DeviceGlyph.qml:
-//   laptop, desktop, phone, tablet, headphones, mouse, keyboard, watch,
+//   laptop, desktop, phone, tablet, headphones, earbuds, mouse, keyboard, watch,
 //   gamepad, speaker, generic
 
 function _clamp(v) {
@@ -28,7 +28,8 @@ function _isCharging(state) {
 // (Bluetooth devices very often report "bluetooth-generic").
 function _kindFromName(name) {
     const n = (name || "").toLowerCase()
-    if (/airpod|buds|earbud|headphone|headset|earphone|wh-1000|wf-1000|beats|jabra|bose/.test(n)) return "headphones"
+    if (/airpod|buds|earbud|earphone|wf-1000/.test(n)) return "earbuds"
+    if (/headphone|headset|wh-1000|beats|jabra|bose|max/.test(n)) return "headphones"
     if (/watch|band|fitbit|garmin/.test(n)) return "watch"
     if (/iphone|phone|pixel|galaxy|xiaomi|oneplus/.test(n)) return "phone"
     if (/ipad|tablet|tab /.test(n)) return "tablet"
@@ -49,7 +50,10 @@ function _upowerKind(kind, name) {
     case "tablet":         return "tablet"
     case "headset":
     case "headphones":
-    case "other-audio":    return "headphones"
+    case "other-audio":    {
+        const k = _kindFromName(name)
+        return k === "earbuds" ? "earbuds" : "headphones"
+    }
     case "speakers":       return "speaker"
     case "gaming-input":   return "gamepad"
     case "wearable":       return "watch"

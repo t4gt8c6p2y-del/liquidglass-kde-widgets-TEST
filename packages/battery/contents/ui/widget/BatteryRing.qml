@@ -17,7 +17,7 @@ Item {
     // Ring thickness relative to its diameter.
     readonly property real thickness: 0.085
     // Icon box relative to the ring diameter.
-    readonly property real glyphScale: 0.42
+    readonly property real glyphScale: 0.52
 
     Behavior on level { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 

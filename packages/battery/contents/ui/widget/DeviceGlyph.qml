@@ -6,7 +6,7 @@ import QtQuick
 Canvas {
     id: glyph
 
-    // laptop, desktop, phone, tablet, headphones, mouse, keyboard, watch,
+    // laptop, desktop, phone, tablet, headphones, earbuds, mouse, keyboard, watch,
     // gamepad, speaker, generic
     property string kind: "generic"
     property color color: "#ffffff"
@@ -43,6 +43,14 @@ Canvas {
         ctx.fill()
     }
 
+    // Translucent body fill, like the iOS icons (outline + softly filled face).
+    function _soft(ctx, a) {
+        ctx.save()
+        ctx.globalAlpha = a
+        ctx.fill()
+        ctx.restore()
+    }
+
     onPaint: {
         const ctx = getContext("2d")
         ctx.reset()
@@ -60,23 +68,32 @@ Canvas {
 
         switch (glyph.kind) {
         case "phone":
-            _rrect(ctx, 27, 3, 46, 94, 11); ctx.stroke()
-            _line(ctx, 41, 12, 59, 12)
-            _line(ctx, 40, 88, 60, 88)
+            // iPhone: thick bezel, softly filled screen, notch + home bar
+            ctx.lineWidth = 7
+            _rrect(ctx, 27.5, 5.5, 45, 89, 11); _soft(ctx, 0.28); ctx.stroke()
+            _rrect(ctx, 39, 11, 22, 6, 3); ctx.fill()
+            _rrect(ctx, 38, 84, 24, 4.6, 2.3); ctx.fill()
             break
-
         case "tablet":
             _rrect(ctx, 14, 6, 72, 88, 9); ctx.stroke()
             _line(ctx, 41, 84, 59, 84)
             break
 
         case "laptop":
-            // MacBook: lid + thin base
-            _rrect(ctx, 17, 20, 66, 44, 6); ctx.stroke()
-            ctx.lineWidth = 6.5
-            _line(ctx, 6, 76, 94, 76)
+            // MacBook: thick bezel, softly filled screen with notch, slim base
+            ctx.lineWidth = 7
+            _rrect(ctx, 16.5, 21.5, 67, 44, 6); _soft(ctx, 0.30); ctx.stroke()
+            _rrect(ctx, 41, 21, 18, 6, 3); ctx.fill()
+            ctx.beginPath()
+            ctx.moveTo(5, 70)
+            ctx.lineTo(95, 70)
+            ctx.lineTo(95, 73)
+            ctx.arcTo(95, 79, 89, 79, 6)
+            ctx.lineTo(11, 79)
+            ctx.arcTo(5, 79, 5, 73, 6)
+            ctx.closePath()
+            ctx.fill()
             break
-
         case "desktop":
             _rrect(ctx, 10, 12, 80, 54, 6); ctx.stroke()
             _line(ctx, 50, 66, 50, 82)
@@ -84,13 +101,24 @@ Canvas {
             break
 
         case "headphones":
+            // Over-ear headphones: thick band + filled ear cups
+            ctx.lineWidth = 8
             ctx.beginPath()
-            ctx.arc(50, 54, 34, Math.PI, 0, false)
+            ctx.arc(50, 52, 33, Math.PI * 1.02, Math.PI * -0.02, false)
             ctx.stroke()
-            _rrect(ctx, 12, 52, 18, 34, 8); ctx.fill()
-            _rrect(ctx, 70, 52, 18, 34, 8); ctx.fill()
+            _rrect(ctx, 11, 50, 22, 40, 11); ctx.fill()
+            _rrect(ctx, 67, 50, 22, 40, 11); ctx.fill()
             break
 
+        case "earbuds":
+            // AirPods: two round heads with stems
+            for (let i = 0; i < 2; i++) {
+                const x = i === 0 ? 33 : 67
+                const sx = i === 0 ? x - 1 : x + 1
+                ctx.beginPath(); ctx.arc(x, 34, 17, 0, Math.PI * 2); ctx.fill()
+                _rrect(ctx, sx - 5.5 + (i === 0 ? -4 : 4), 36, 11, 52, 5.5); ctx.fill()
+            }
+            break
         case "mouse":
             _rrect(ctx, 27, 5, 46, 90, 23); ctx.stroke()
             _line(ctx, 50, 6, 50, 38)

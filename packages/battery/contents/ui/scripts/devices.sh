@@ -17,18 +17,34 @@ if command -v upower >/dev/null 2>&1; then
     function val(s)  { sub(/^[^:]*:/, "", s); return trim(s) }
     function flush() {
         if (dev != "" && dev !~ /DisplayDevice/ && kind != "" && kind != "line-power" && pct != "")
-            printf "UPOWER|%s|%s|%s|%s|%s\n", kind, model, pct, state, supply
+            printf "UPOWER|%s|%s|%s|%s|%s|%s\n", kind, model, pct, state, supply, npath
     }
-    /^Device:/ { flush(); dev = $2; kind = ""; model = ""; pct = ""; state = ""; supply = ""; next }
+    /^Device:/ { flush(); dev = $2; kind = ""; model = ""; pct = ""; state = ""; supply = ""; npath = ""; next }
     /^Daemon:/ { flush(); dev = ""; next }
     dev == "" { next }
     /^  [a-z][a-z-]*[ \t]*$/ { kind = trim($0); next }
+    /^  native-path:/  { npath = val($0); next }
     /^  model:/        { model = val($0); next }
     /^  power supply:/ { supply = val($0); next }
     /^    state:/      { state = val($0); next }
     /^    percentage:/ { pct = val($0); sub(/%.*/, "", pct); next }
     END { flush() }
-    '
+    ' | while IFS='|' read -r tag kind model pct state supply npath; do
+        # Bluetooth devices: UPower keeps a stale entry (and a stale level)
+        # after a disconnect. Skip devices BlueZ says are not connected and
+        # prefer BlueZ's own, fresher battery value.
+        case "$npath" in
+        /org/bluez/*)
+            if command -v busctl >/dev/null 2>&1; then
+                conn=$(busctl --system get-property org.bluez "$npath" org.bluez.Device1 Connected 2>/dev/null | awk '{print $2}')
+                [ "$conn" = "false" ] && continue
+                fresh=$(busctl --system get-property org.bluez "$npath" org.bluez.Battery1 Percentage 2>/dev/null | awk '{print $2}')
+                [ -n "$fresh" ] && pct=$fresh
+            fi
+            ;;
+        esac
+        echo "$tag|$kind|$model|$pct|$state|$supply"
+    done
 fi
 
 # ── Phones / tablets paired with KDE Connect ───────────────────────────────

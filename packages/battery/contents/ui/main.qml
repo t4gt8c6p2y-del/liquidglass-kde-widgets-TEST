@@ -64,11 +64,12 @@ PlasmoidItem {
             root.info = next
     }
 
-    // Battery levels move slowly; a light poll is plenty.
+    // Battery levels move slowly; a light poll is plenty (one short script
+    // every 30 s, and nothing while the widget is hidden).
     Timer {
-        interval: 15000
+        interval: 30000
         repeat: true
-        running: true
+        running: root.visible
         triggeredOnStart: true
         onTriggered: runner.run()
     }
@@ -201,10 +202,9 @@ PlasmoidItem {
                 width: rect.d
                 height: rect.d
 
-                // Slot 0 is always the computer; the others only exist while a
-                // device reports a battery. The wide layout keeps free slots as
-                // empty rings, like the iOS medium widget.
-                opacity: (index === 0 || dev !== null || full.isWide) ? 1 : 0
+                // Slot 0 is always the computer. In the grid and wide layouts free
+                // slots stay as empty rings, like the iOS widget.
+                opacity: (index === 0 || dev !== null || full.mode !== "single") ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
 
