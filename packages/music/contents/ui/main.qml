@@ -321,6 +321,7 @@ PlasmoidItem {
     readonly property string _playerArt: _activePlayer?.artUrl ?? ""
     property string _onlineArt: ""
     property string _onlineArtKey: ""
+    property string _prevTrack: ""
     property var _onlineArtCache: ({})
     readonly property string _rawAlbumArt: _playerArt !== "" ? _playerArt : _onlineArt
     readonly property string _noAlbumUrl: Qt.resolvedUrl("icons/no_album.png")
@@ -356,6 +357,42 @@ PlasmoidItem {
         return (t || "").toLowerCase().replace(/[\s\-_.,:;!?'"()\[\]&]+/g, "")
     }
 
+    // One cover-art request. `parse` turns the JSON answer into a list of
+    // { title, artist, art } and `done` receives that list.
+    function _artGet(url, key, parse, done) {
+        var xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (root._onlineArtKey !== key) return  // stale
+            var list = []
+            if (xhr.status === 200) {
+                try { list = parse(JSON.parse(xhr.responseText)) }
+                catch (e) { list = [] }
+            }
+            done(list)
+        }
+        xhr.open("GET", url)
+        xhr.send()
+    }
+
+    // Best cover of a result list: artist + title match first, then title only.
+    function _pickArt(list, wantT, wantA) {
+        var titleOnly = ""
+        for (var i = 0; i < list.length; i++) {
+            var it = list[i]
+            if (!it.art) continue
+            var nt = root._normKey(it.title)
+            var na = root._normKey(it.artist)
+            var okT = nt !== "" && (nt.indexOf(wantT) >= 0 || wantT.indexOf(nt) >= 0)
+            var okA = wantA !== "" && na !== "" && (na.indexOf(wantA) >= 0 || wantA.indexOf(na) >= 0)
+            if (okT && okA) return it.art
+            if (okT && titleOnly === "") titleOnly = it.art
+        }
+        return titleOnly
+    }
+
+    // Cover lookup, several sources in turn (the first one that matches wins):
+    // iTunes, then Deezer (exact fields), then Deezer (free text).
     function _fetchOnlineArt() {
         if (_playerArt !== "" || track === "" || artist === "") {
             _onlineArt = ""
@@ -368,40 +405,57 @@ PlasmoidItem {
         }
         _onlineArt = ""
         _onlineArtKey = key
-        var wantT = _normKey(_cleanTitle(track))
-        var wantA = _normKey(_firstArtist(artist))
+
+        var art1 = _firstArtist(artist).replace(/"/g, "")
+        var title1 = _cleanTitle(track).replace(/"/g, "")
+        var wantT = _normKey(title1)
+        var wantA = _normKey(art1)
         if (wantT === "") return
 
-        var xhr = new XMLHttpRequest()
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return
-            if (root._onlineArtKey !== key) return  // stale
-            var url = ""
-            if (xhr.status === 200) {
-                try {
-                    var res = JSON.parse(xhr.responseText).results || []
-                    var titleOnly = null
-                    for (var i = 0; i < res.length; i++) {
-                        var it = res[i]
-                        if (!it.artworkUrl100) continue
-                        var okT = root._normKey(it.trackName).indexOf(wantT) >= 0
-                        var okA = wantA !== "" && root._normKey(it.artistName).indexOf(wantA) >= 0
-                        if (okT && okA) { url = it.artworkUrl100; break }
-                        if (okT && !titleOnly) titleOnly = it.artworkUrl100
-                    }
-                    if (url === "" && titleOnly) url = titleOnly
-                    if (url !== "") url = url.replace("100x100bb", "600x600bb")
-                } catch (e) {
-                    url = ""
-                }
-            }
-            if (xhr.status === 200) root._onlineArtCache[key] = url
+        function finish(url) {
+            if (url === "") return
+            root._onlineArtCache[key] = url
             if (root._playerArt === "" && root.artist + "|" + root.track === key)
                 root._onlineArt = url
         }
-        xhr.open("GET", "https://itunes.apple.com/search?media=music&entity=song&limit=8&term="
-                 + encodeURIComponent(_firstArtist(artist) + " " + _cleanTitle(track)))
-        xhr.send()
+        function parseItunes(j) {
+            var out = []
+            var res = j.results || []
+            for (var i = 0; i < res.length; i++)
+                out.push({ title: res[i].trackName, artist: res[i].artistName,
+                           art: (res[i].artworkUrl100 || "").replace("100x100bb", "600x600bb") })
+            return out
+        }
+        function parseDeezer(j) {
+            var out = []
+            var res = j.data || []
+            for (var i = 0; i < res.length; i++) {
+                var al = res[i].album || {}
+                out.push({ title: res[i].title, artist: res[i].artist ? res[i].artist.name : "",
+                           art: al.cover_xl || al.cover_big || al.cover_medium || "" })
+            }
+            return out
+        }
+        function deezerFree() {
+            root._artGet("https://api.deezer.com/search?limit=8&q=" + encodeURIComponent(art1 + " " + title1),
+                         key, parseDeezer, function(list) { finish(root._pickArt(list, wantT, wantA)) })
+        }
+        function deezerExact() {
+            root._artGet("https://api.deezer.com/search?limit=8&q="
+                         + encodeURIComponent('artist:"' + art1 + '" track:"' + title1 + '"'),
+                         key, parseDeezer, function(list) {
+                             var url = root._pickArt(list, wantT, wantA)
+                             if (url !== "") finish(url)
+                             else deezerFree()
+                         })
+        }
+        root._artGet("https://itunes.apple.com/search?media=music&entity=song&limit=10&term="
+                     + encodeURIComponent(art1 + " " + title1),
+                     key, parseItunes, function(list) {
+                         var url = root._pickArt(list, wantT, wantA)
+                         if (url !== "") finish(url)
+                         else deezerExact()
+                     })
     }
 
     Timer {
@@ -648,7 +702,10 @@ PlasmoidItem {
         }
         root._onlineArt = ""
         _onlineArtTimer.restart()
-        root.position = root._lengthInMs ? 0 : (root._activePlayer?.position ?? 0)
+        // On a real track change restart from 0 (a phone's reported position is
+        // often stale); only when the widget starts mid-song trust the player.
+        root.position = root._prevTrack !== "" ? 0 : (root._activePlayer?.position ?? 0)
+        root._prevTrack = track
         root._lastPosTick = 0
         root._lastSampledUrl = ""
         _scheduleArtRefresh()
