@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.private.mpris as Mpris
+import org.kde.plasma.plasma5support as P5Support
 import "components"
 import "widget"
 
@@ -36,7 +37,18 @@ PlasmoidItem {
         onTriggered: root.previous()
     }
 
-    Plasmoid.contextualActions: [playPauseAction, nextAction, previousAction].concat(commonActions.list)
+    // Phone control path. KDE Connect talks to the phone's media session over
+    // Wi-Fi, so pressing play/pause does not make the phone move its audio to
+    // this PC (which the Bluetooth/AVRCP commands do). It also gives the cover.
+    PlasmaCore.Action {
+        id: phoneSourceAction
+        text: root._kcPreferred ? i18n("Phone: use Bluetooth controls")
+                                : i18n("Phone: use KDE Connect")
+        icon.name: "smartphone"
+        onTriggered: plasmoid.configuration.phoneSource = root._kcPreferred ? 0 : 1
+    }
+
+    Plasmoid.contextualActions: [playPauseAction, nextAction, previousAction, phoneSourceAction].concat(commonActions.list)
     preferredRepresentation: fullRepresentation
 
     readonly property bool _shouldShow: {
@@ -79,6 +91,157 @@ PlasmoidItem {
 
     Mpris.Mpris2Model { id: mpris2Model }
 
+    // ── KDE Connect (phone media over Wi-Fi) ─────────────────────────────
+    // 0 = Bluetooth (MPRIS) only, 1 = KDE Connect first (falls back to
+    // Bluetooth when KDE Connect has nothing to show).
+    readonly property bool _kcPreferred: plasmoid.configuration.phoneSource === 1
+
+    // Mimics the subset of the MPRIS player API the widget uses, so the rest
+    // of the code does not care where the track comes from.
+    QtObject {
+        id: kcPlayer
+        property string deviceId: ""
+        property string deviceName: ""
+        property string identity: deviceName
+        property string track: ""
+        property string artist: ""
+        property string album: ""
+        property string artUrl: ""
+        property real length: 0      // microseconds
+        property real position: 0    // microseconds
+        property int playbackStatus: Mpris.PlaybackStatus.Stopped
+        property bool canGoNext: true
+        property bool canGoPrevious: true
+        property bool canPlay: true
+        property bool canPause: true
+
+        function Play()      { root._kcSend("Play") }
+        function Pause()     { root._kcSend("Pause") }
+        function PlayPause() { root._kcSend(playbackStatus === Mpris.PlaybackStatus.Playing ? "Pause" : "Play") }
+        function Next()      { root._kcSend("Next") }
+        function Previous()  { root._kcSend("Previous") }
+        function Seek(offsetUs) { root._kcSeek(Math.max(0, Math.round((position + offsetUs) / 1000))) }
+    }
+
+    readonly property bool _isKc: _activePlayer === kcPlayer
+
+    readonly property string _kcScript:
+        decodeURIComponent(Qt.resolvedUrl("scripts/kdeconnect-media.sh").toString().replace(/^file:\/\//, ""))
+    function _kcCmd(args) {
+        return "sh '" + _kcScript.replace(/'/g, "'\\''") + "' " + args
+    }
+    property bool _kcBusy: false
+
+    P5Support.DataSource {
+        id: kcRunner
+        engine: "executable"
+        connectedSources: []
+        onNewData: (source, data) => {
+            disconnectSource(source)
+            if (source.indexOf(" poll") >= 0) {
+                root._kcBusy = false
+                root._applyKc(data["stdout"])
+            }
+        }
+    }
+
+    function _kcPoll() {
+        if (_kcBusy) return
+        _kcBusy = true
+        kcRunner.connectSource(_kcCmd("poll"))
+    }
+    function _kcSend(action) {
+        if (kcPlayer.deviceId === "") return
+        kcRunner.connectSource(_kcCmd("send " + kcPlayer.deviceId + " " + action + " " + Date.now()))
+        // Refresh quickly so the play/pause state follows the command.
+        _kcRefreshTimer.restart()
+    }
+    function _kcSeek(ms) {
+        if (kcPlayer.deviceId === "") return
+        kcRunner.connectSource(_kcCmd("seek " + kcPlayer.deviceId + " " + ms + " " + Date.now()))
+    }
+
+    Timer {
+        id: _kcRefreshTimer
+        interval: 700
+        onTriggered: root._kcPoll()
+    }
+
+    // Light poll while KDE Connect is wanted. It also runs (more slowly) while
+    // the widget is auto-hidden, otherwise it could never reappear.
+    Timer {
+        interval: root.visible ? 1500 : 4000
+        repeat: true
+        running: root._kcPreferred
+        triggeredOnStart: true
+        onTriggered: root._kcPoll()
+    }
+
+    // The poll script prints: <id> TAB <name json> TAB <properties json>
+    function _applyKc(text) {
+        var chosen = null
+        var lines = (text || "").split("\n")
+        for (var i = 0; i < lines.length; i++) {
+            var parts = lines[i].split("\t")
+            if (parts.length < 3) continue
+            try {
+                var nj = JSON.parse(parts[1])
+                var name = nj.data
+                if (Array.isArray(name)) name = name[0]
+                var pj = JSON.parse(parts[2])
+                var m = Array.isArray(pj.data) ? pj.data[0] : pj.data
+                var pv = function(k) {
+                    var e = m[k]
+                    return (e !== undefined && e !== null && e.data !== undefined) ? e.data : e
+                }
+                var title = pv("title") || ""
+                if (title === "") continue
+                var cand = {
+                    id: parts[0], name: name || "", title: title,
+                    artist: pv("artist") || "", album: pv("album") || "",
+                    playing: pv("isPlaying") === true,
+                    posMs: pv("position") || 0, lenMs: pv("length") || 0,
+                    art: pv("localAlbumArtUrl") || ""
+                }
+                if (!chosen || (cand.playing && !chosen.playing)) chosen = cand
+            } catch (e) {
+                // malformed line: ignore it
+            }
+        }
+
+        if (!chosen) {
+            // Nothing to show any more: empty the player so it drops out.
+            if (kcPlayer.track !== "" || kcPlayer.artist !== "") {
+                kcPlayer.track = ""
+                kcPlayer.artist = ""
+                kcPlayer.album = ""
+                kcPlayer.artUrl = ""
+                kcPlayer.playbackStatus = Mpris.PlaybackStatus.Stopped
+            }
+            return
+        }
+
+        var art = chosen.art
+        if (art !== "" && art.indexOf("://") < 0 && art.charAt(0) === "/") art = "file://" + art
+        var status = chosen.playing ? Mpris.PlaybackStatus.Playing : Mpris.PlaybackStatus.Paused
+        var posUs = chosen.posMs * 1000
+        var trackChanged = chosen.title !== kcPlayer.track || chosen.artist !== kcPlayer.artist
+
+        kcPlayer.deviceId = chosen.id
+        kcPlayer.deviceName = chosen.name
+        kcPlayer.length = chosen.lenMs * 1000
+        // The phone's position is only refreshed now and then; keep our own
+        // running clock unless the phone's value really differs (seek, new track).
+        if (trackChanged || status !== kcPlayer.playbackStatus
+                || Math.abs(posUs - root.position) > 2500000)
+            kcPlayer.position = posUs
+        kcPlayer.album = chosen.album
+        kcPlayer.artUrl = art
+        kcPlayer.playbackStatus = status
+        kcPlayer.artist = chosen.artist
+        kcPlayer.track = chosen.title
+    }
+
     function _isPlayerAllowed(identity) {
         var f = (plasmoid.configuration.playerFilter || "").toLowerCase()
         if (f === "") return true
@@ -112,12 +275,18 @@ PlasmoidItem {
         var bestScore = 0
         function consider(p) {
             if (!p || !_isPlayerAllowed(p.identity) || !(p.track || p.artist)) return
+            // When KDE Connect shows the phone, hide its Bluetooth duplicate
+            // (BlueZ names it "<phone name> <app>").
+            if (p !== kcPlayer && root._kcPreferred && (kcPlayer.track || kcPlayer.artist)
+                    && kcPlayer.deviceName !== ""
+                    && (p.identity || "").toLowerCase().indexOf(kcPlayer.deviceName.toLowerCase()) >= 0) return
             var score = p.playbackStatus === Mpris.PlaybackStatus.Playing ? 2 : 1
             if (score > bestScore) { best = p; bestScore = score }
         }
         consider(mpris2Model.currentPlayer)
         for (var i = 1; i < mpris2Model.rowCount(); i++)
             consider(mpris2Model.data(mpris2Model.index(i, 0), CONTAINER_ROLE))
+        if (root._kcPreferred) consider(kcPlayer)
         return best
     }
 
@@ -133,13 +302,92 @@ PlasmoidItem {
     readonly property string track:   _activePlayer?.track ?? ""
     readonly property string artist:  _activePlayer?.artist ?? ""
     readonly property string album:   _activePlayer?.album ?? ""
-    readonly property string _rawAlbumArt: _activePlayer?.artUrl ?? ""
+    // Bluetooth (AVRCP) never carries a cover, so when the player gives none we
+    // look it up online (iTunes) from the artist + title.
+    readonly property string _playerArt: _activePlayer?.artUrl ?? ""
+    property string _onlineArt: ""
+    property string _onlineArtKey: ""
+    property var _onlineArtCache: ({})
+    readonly property string _rawAlbumArt: _playerArt !== "" ? _playerArt : _onlineArt
     readonly property string _noAlbumUrl: Qt.resolvedUrl("icons/no_album.png")
     property string albumArt: _noAlbumUrl
 
     on_RawAlbumArtChanged: {
-        if (_rawAlbumArt === "") return
+        if (_rawAlbumArt === "") {
+            // Empty for a moment between tracks is normal; only clear if it stays empty.
+            _artDebounceTimer.stop()
+            _artClearTimer.restart()
+            return
+        }
+        _artClearTimer.stop()
         _artDebounceTimer.restart()
+    }
+
+    Timer {
+        id: _artClearTimer
+        interval: 1500
+        onTriggered: root.albumArt = root._noAlbumUrl
+    }
+
+    on_PlayerArtChanged: _onlineArtTimer.restart()
+    onArtistChanged: _onlineArtTimer.restart()
+
+    Timer {
+        id: _onlineArtTimer
+        interval: 500
+        onTriggered: root._fetchOnlineArt()
+    }
+
+    function _normKey(t) {
+        return (t || "").toLowerCase().replace(/[\s\-_.,:;!?'"()\[\]&]+/g, "")
+    }
+
+    function _fetchOnlineArt() {
+        if (_playerArt !== "" || track === "" || artist === "") {
+            _onlineArt = ""
+            return
+        }
+        var key = artist + "|" + track
+        if (_onlineArtCache[key] !== undefined) {
+            _onlineArt = _onlineArtCache[key]
+            return
+        }
+        _onlineArt = ""
+        _onlineArtKey = key
+        var wantT = _normKey(_cleanTitle(track))
+        var wantA = _normKey(_firstArtist(artist))
+        if (wantT === "") return
+
+        var xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (root._onlineArtKey !== key) return  // stale
+            var url = ""
+            if (xhr.status === 200) {
+                try {
+                    var res = JSON.parse(xhr.responseText).results || []
+                    var titleOnly = null
+                    for (var i = 0; i < res.length; i++) {
+                        var it = res[i]
+                        if (!it.artworkUrl100) continue
+                        var okT = root._normKey(it.trackName).indexOf(wantT) >= 0
+                        var okA = wantA !== "" && root._normKey(it.artistName).indexOf(wantA) >= 0
+                        if (okT && okA) { url = it.artworkUrl100; break }
+                        if (okT && !titleOnly) titleOnly = it.artworkUrl100
+                    }
+                    if (url === "" && titleOnly) url = titleOnly
+                    if (url !== "") url = url.replace("100x100bb", "600x600bb")
+                } catch (e) {
+                    url = ""
+                }
+            }
+            if (xhr.status === 200) root._onlineArtCache[key] = url
+            if (root._playerArt === "" && root.artist + "|" + root.track === key)
+                root._onlineArt = url
+        }
+        xhr.open("GET", "https://itunes.apple.com/search?media=music&entity=song&limit=8&term="
+                 + encodeURIComponent(_firstArtist(artist) + " " + _cleanTitle(track)))
+        xhr.send()
     }
 
     Timer {
@@ -384,6 +632,8 @@ PlasmoidItem {
             _artDebounceTimer.stop()
             albumArt = _noAlbumUrl
         }
+        root._onlineArt = ""
+        _onlineArtTimer.restart()
         root.position = root._lengthInMs ? 0 : (root._activePlayer?.position ?? 0)
         root._lastPosTick = 0
         root._lastSampledUrl = ""
@@ -440,7 +690,7 @@ PlasmoidItem {
 
     function _scheduleArtRefresh() {
         if (!plasmoid.configuration.artRefreshEnabled) return
-        if (root._lengthInMs) return   // never pause a phone's playback
+        if (root._lengthInMs || root._isKc) return   // never pause a phone's playback
         artRefreshTimer.stop()
         artResumeTimer.stop()
         if (root.isPlaying) artRefreshTimer.start()
