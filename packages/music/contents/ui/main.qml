@@ -91,17 +91,39 @@ PlasmoidItem {
         return plasmoid.configuration.filterMode === 1 ? !inList : inList
     }
 
-    property var _activePlayer: {
-        var cp = mpris2Model.currentPlayer
-        if (cp && _isPlayerAllowed(cp.identity) && (cp.track || cp.artist))
-            return cp
+    // Bumped whenever the list of MPRIS players changes, so the player choice
+    // below is re-evaluated (rowCount() alone is not reactive).
+    property int _modelRev: 0
+    Connections {
+        target: mpris2Model
+        function onRowsInserted() { root._modelRev++ }
+        function onRowsRemoved() { root._modelRev++ }
+        function onModelReset() { root._modelRev++ }
+        function onCurrentPlayerChanged() { root._modelRev++ }
+    }
+
+    // Picks the player to display. A player that is actually playing always wins
+    // over a paused one, wherever it comes from (a PC app, a browser, or a phone
+    // exposed over Bluetooth by BlueZ's mpris-proxy). When several are playing,
+    // or none is, the first one (Plasma's own current player) is kept.
+    function _pickPlayer() {
         const CONTAINER_ROLE = Qt.UserRole + 1
-        for (var i = 1; i < mpris2Model.rowCount(); i++) {
-            var p = mpris2Model.data(mpris2Model.index(i, 0), CONTAINER_ROLE)
-            if (p && _isPlayerAllowed(p.identity) && (p.track || p.artist))
-                return p
+        var best = null
+        var bestScore = 0
+        function consider(p) {
+            if (!p || !_isPlayerAllowed(p.identity) || !(p.track || p.artist)) return
+            var score = p.playbackStatus === Mpris.PlaybackStatus.Playing ? 2 : 1
+            if (score > bestScore) { best = p; bestScore = score }
         }
-        return null
+        consider(mpris2Model.currentPlayer)
+        for (var i = 1; i < mpris2Model.rowCount(); i++)
+            consider(mpris2Model.data(mpris2Model.index(i, 0), CONTAINER_ROLE))
+        return best
+    }
+
+    property var _activePlayer: {
+        root._modelRev
+        return root._pickPlayer()
     }
     readonly property bool _playerAllowed: {
         var cp = mpris2Model.currentPlayer
@@ -131,7 +153,12 @@ PlasmoidItem {
     readonly property bool canGoNext:     _activePlayer?.canGoNext ?? false
     readonly property bool canPlay:  _activePlayer?.canPlay ?? false
     readonly property bool canPause: _activePlayer?.canPause ?? false
-    readonly property real length: _activePlayer?.length ?? 0
+    readonly property real _rawLength: _activePlayer?.length ?? 0
+    // BlueZ's mpris-proxy (phone over Bluetooth) reports the track duration in
+    // milliseconds instead of microseconds. No real track lasts under 1 second,
+    // so a tiny value means "milliseconds".
+    readonly property bool _lengthInMs: _rawLength > 0 && _rawLength < 1000000
+    readonly property real length: _lengthInMs ? _rawLength * 1000 : _rawLength
 
     property real position: 0
     property bool lyricsActive: false
@@ -167,7 +194,7 @@ PlasmoidItem {
     Timer {
         id: lyricsPositionTimer
         interval: 80
-        running: root.isPlaying && root.lyricsActive && root.length > 0
+        running: root.isPlaying && root.lyricsActive
         repeat: true
         onTriggered: {
             var now = Date.now()
@@ -177,6 +204,68 @@ PlasmoidItem {
         }
     }
 
+    function _cleanTitle(t) {
+        var c = t.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, "").replace(/\s+-\s+.*$/, "").trim()
+        return c !== "" ? c : t
+    }
+
+    function _firstArtist(a) {
+        var c = a.split(/\s*(?:,|;|\bfeat\b\.?|\bft\b\.?)\s*/i)[0].trim()
+        return c !== "" ? c : a
+    }
+
+    function _applyLyrics(resp) {
+        var synced = resp.syncedLyrics || ""
+        root._plainLyrics = resp.plainLyrics || ""
+        root._syncedLyrics = synced !== "" ? root._parseLrc(synced, (resp.offset || 0) * 1000) : []
+        root._lyricsState = 2
+        root._lyricsFailCount = 0
+        _lyricsRetryTimer.stop()
+    }
+
+    function _lyricsNotFound() {
+        root._lyricsState = 4
+        root._lyricsFailCount = 0
+        _lyricsRetryTimer.stop()
+    }
+
+    function _lyricsFailed() {
+        root._lyricsState = 3
+        root._lyricsFailCount = Math.min(root._lyricsFailCount + 1, root._lyricsBackoff.length - 1)
+        _lyricsRetryTimer.interval = root._lyricsBackoff[root._lyricsFailCount]
+        _lyricsRetryTimer.restart()
+    }
+
+    function _lrclibGet(url, key, cb) {
+        var xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (root._lyricsTrackKey !== key) return  // stale
+            cb(xhr.status, xhr.responseText)
+        }
+        xhr.open("GET", url)
+        xhr.send()
+    }
+
+    // Picks the best entry of an LRCLIB search result: synced lyrics first,
+    // and a duration close to the real one when we know it.
+    function _pickLyricsResult(list, durSec) {
+        if (!list || !list.length) return null
+        var best = null
+        for (var i = 0; i < list.length; i++) {
+            var it = list[i]
+            if (!it.syncedLyrics) continue
+            if (durSec > 0 && it.duration > 0 && Math.abs(it.duration - durSec) > 5) continue
+            best = it
+            break
+        }
+        if (best) return best
+        for (var j = 0; j < list.length; j++) {
+            if (list[j].plainLyrics) return list[j]
+        }
+        return null
+    }
+
     function _fetchLyrics() {
         if (track === "" || artist === "") return
         var key = artist + "|" + track
@@ -184,47 +273,64 @@ PlasmoidItem {
         _lyricsTrackKey = key
         _lyricsState = 1
 
-        var url = "https://lrclib.net/api/get"
+        var base = "https://lrclib.net/api/"
+        var durSec = length > 0 ? Math.round(length / 1000000) : 0
+
+        var loose = base + "get"
             + "?artist_name=" + encodeURIComponent(artist)
             + "&track_name=" + encodeURIComponent(track)
+        var exact = loose
         if (album !== "")
-            url += "&album_name=" + encodeURIComponent(album)
-        if (length > 0)
-            url += "&duration=" + Math.round(length / 1000000)
+            exact += "&album_name=" + encodeURIComponent(album)
+        if (durSec > 0)
+            exact += "&duration=" + durSec
 
-        var xhr = new XMLHttpRequest()
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return
-            if (root._lyricsTrackKey !== key) return  // stale
+        var search = base + "search"
+            + "?track_name=" + encodeURIComponent(root._cleanTitle(track))
+            + "&artist_name=" + encodeURIComponent(root._firstArtist(artist))
 
-            if (xhr.status === 200) {
-                try {
-                    var resp = JSON.parse(xhr.responseText)
-                    var synced = resp.syncedLyrics || ""
-                    root._plainLyrics = resp.plainLyrics || ""
-                    root._syncedLyrics = synced !== "" ? root._parseLrc(synced, (resp.offset || 0) * 1000) : []
-                    root._lyricsState = 2
-                    root._lyricsFailCount = 0
-                    _lyricsRetryTimer.stop()
-                } catch(e) {
-                    root._lyricsState = 3
-                    root._lyricsFailCount = Math.min(root._lyricsFailCount + 1, root._lyricsBackoff.length - 1)
-                    _lyricsRetryTimer.interval = root._lyricsBackoff[root._lyricsFailCount]
-                    _lyricsRetryTimer.restart()
+        function trySearch() {
+            root._lrclibGet(search, key, function(status, text) {
+                if (status === 200) {
+                    try {
+                        var pick = root._pickLyricsResult(JSON.parse(text), durSec)
+                        if (pick) root._applyLyrics(pick)
+                        else root._lyricsNotFound()
+                    } catch (e) {
+                        root._lyricsFailed()
+                    }
+                } else if (status === 404) {
+                    root._lyricsNotFound()
+                } else {
+                    root._lyricsFailed()
                 }
-            } else if (xhr.status === 404) {
-                root._lyricsState = 4
-                root._lyricsFailCount = 0
-                _lyricsRetryTimer.stop()
-            } else {
-                root._lyricsState = 3
-                root._lyricsFailCount = Math.min(root._lyricsFailCount + 1, root._lyricsBackoff.length - 1)
-                _lyricsRetryTimer.interval = root._lyricsBackoff[root._lyricsFailCount]
-                _lyricsRetryTimer.restart()
-            }
+            })
         }
-        xhr.open("GET", url)
-        xhr.send()
+
+        function tryLoose() {
+            if (loose === exact) { trySearch(); return }
+            root._lrclibGet(loose, key, function(status, text) {
+                if (status === 200) {
+                    try { root._applyLyrics(JSON.parse(text)) }
+                    catch (e) { root._lyricsFailed() }
+                } else if (status === 404) {
+                    trySearch()
+                } else {
+                    root._lyricsFailed()
+                }
+            })
+        }
+
+        root._lrclibGet(exact, key, function(status, text) {
+            if (status === 200) {
+                try { root._applyLyrics(JSON.parse(text)) }
+                catch (e) { root._lyricsFailed() }
+            } else if (status === 404) {
+                tryLoose()
+            } else {
+                root._lyricsFailed()
+            }
+        })
     }
 
     function _parseLrc(lrcContent, apiOffsetMs) {
@@ -278,7 +384,7 @@ PlasmoidItem {
             _artDebounceTimer.stop()
             albumArt = _noAlbumUrl
         }
-        root.position = root._activePlayer?.position ?? 0
+        root.position = root._lengthInMs ? 0 : (root._activePlayer?.position ?? 0)
         root._lastPosTick = 0
         root._lastSampledUrl = ""
         _scheduleArtRefresh()
@@ -305,6 +411,8 @@ PlasmoidItem {
         root._lastPosTick = 0
     }
     onLengthChanged: {
+        if (_lengthInMs && root.position > root.length)
+            root.position = 0
         if (length > 0 && _lyricsState === 0 && track !== "")
             _lyricsFetchTimer.restart()
     }
@@ -332,6 +440,7 @@ PlasmoidItem {
 
     function _scheduleArtRefresh() {
         if (!plasmoid.configuration.artRefreshEnabled) return
+        if (root._lengthInMs) return   // never pause a phone's playback
         artRefreshTimer.stop()
         artResumeTimer.stop()
         if (root.isPlaying) artRefreshTimer.start()
@@ -353,6 +462,7 @@ PlasmoidItem {
     }
     function seek(positionUs) {
         if (!root._activePlayer) return
+        if (root._lengthInMs) return   // Bluetooth (AVRCP) players cannot seek
         var currentPos = root._activePlayer.position ?? root.position
         var offset = positionUs - currentPos
         root._activePlayer.Seek(offset)

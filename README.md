@@ -211,6 +211,22 @@ sudo apt install plasma-browser-integration
 
 Without this, browser playback may still show controls but with no album art.
 
+### Media (Phone over Bluetooth)
+
+The Music widget can also show what your **phone** is playing, with working play/pause/next/previous buttons and lyrics, as long as the phone is paired and connected to the PC over Bluetooth. BlueZ exposes the phone as an MPRIS player through `mpris-proxy`, which has to be running in your user session:
+
+```
+systemctl --user enable --now mpris-proxy.service
+```
+
+Check that the phone shows up (a line containing `org.mpris.MediaPlayer2.` and your phone's name):
+
+```
+busctl --user list | grep -i mpris
+```
+
+A player that is actually playing always wins over a paused one, so the PC keeps priority only while it is playing. Notes: over Bluetooth there is usually no album art, and the progress bar cannot be used to seek.
+
 ---
 
 ## License

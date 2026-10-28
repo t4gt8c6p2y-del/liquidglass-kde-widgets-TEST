@@ -10,6 +10,11 @@ Item {
     property color fallbackColor: "#2c2c2e"
     property color fallbackIconColor: "#ffffff"
 
+    // The rounded-corner mask is rasterised at a higher resolution than the
+    // screen and then filtered down, which is what gives smooth (anti-aliased)
+    // corners instead of a stair-stepped edge.
+    readonly property real _maskScale: 2 * Math.max(1, Screen.devicePixelRatio)
+
     Image {
         id: coverImage
         anchors.fill: parent
@@ -19,19 +24,25 @@ Item {
         mipmap: true
         visible: false
         layer.enabled: true
+        layer.smooth: true
         cache: false
     }
 
     Item {
         id: roundMask
         anchors.fill: parent
-        layer.enabled: true
         visible: false
+        layer.enabled: true
+        layer.smooth: true
+        layer.samples: 4
+        layer.textureSize: Qt.size(Math.max(1, Math.ceil(width * art._maskScale)),
+                                   Math.max(1, Math.ceil(height * art._maskScale)))
 
         Rectangle {
             anchors.fill: parent
             radius: art.radius
             color: "white"
+            antialiasing: true
         }
     }
 
@@ -39,6 +50,7 @@ Item {
         anchors.fill: parent
         color: art.fallbackColor
         radius: art.radius
+        antialiasing: true
         opacity: 0.3
     }
 

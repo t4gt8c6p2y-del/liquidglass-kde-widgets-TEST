@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 
 Item {
     id: layout
@@ -33,10 +34,44 @@ Item {
 
     clip: true
 
-    onCornerRadiusChanged: squircleMask.requestPaint()
-    onRoundnessChanged: squircleMask.requestPaint()
-    onWidthChanged: squircleMask.requestPaint()
-    onHeightChanged: squircleMask.requestPaint()
+    // Supersampling factor for the squircle mask (see bgArtMask below).
+    readonly property real _maskScale: 2 * Math.max(1, Screen.devicePixelRatio)
+
+    // Superellipse outline matching the glass shader's SDF:
+    //   q = abs(p) - b + r; corner boundary: (qx^n + qy^n)^(1/n) = r
+    // parametrically: qx = r*cos(t)^(2/n), qy = r*sin(t)^(2/n)
+    function _squirclePath(w, h, cr, rn) {
+        var r = Math.min(cr, w / 2, h / 2)
+        var n = Math.max(rn, 2.0)
+        var steps = 48
+        var pts = []
+        function cx(t) { return r * Math.pow(Math.abs(Math.cos(t)), 2.0 / n) }
+        function cy(t) { return r * Math.pow(Math.abs(Math.sin(t)), 2.0 / n) }
+        var i, t
+
+        pts.push(Qt.point(r, 0))
+        pts.push(Qt.point(w - r, 0))
+        for (i = 1; i <= steps; i++) {            // top-right
+            t = (1 - i / steps) * Math.PI / 2
+            pts.push(Qt.point(w - r + cx(t), r - cy(t)))
+        }
+        pts.push(Qt.point(w, h - r))
+        for (i = 1; i <= steps; i++) {            // bottom-right
+            t = (1 - i / steps) * Math.PI / 2
+            pts.push(Qt.point(w - r + cy(t), h - r + cx(t)))
+        }
+        pts.push(Qt.point(r, h))
+        for (i = 1; i <= steps; i++) {            // bottom-left
+            t = (1 - i / steps) * Math.PI / 2
+            pts.push(Qt.point(r - cx(t), h - r + cy(t)))
+        }
+        pts.push(Qt.point(0, r))
+        for (i = 1; i <= steps; i++) {            // top-left
+            t = (1 - i / steps) * Math.PI / 2
+            pts.push(Qt.point(r - cy(t), r - cx(t)))
+        }
+        return pts
+    }
 
     // Album art as full background with gradient fade-out toward bottom
     Item {
@@ -49,6 +84,7 @@ Item {
             anchors.fill: parent
             visible: false
             layer.enabled: true
+            layer.smooth: true
 
             Image {
                 anchors.fill: parent
@@ -74,70 +110,20 @@ Item {
             anchors.fill: parent
             visible: false
             layer.enabled: true
+            layer.smooth: true
+            layer.samples: 4
+            layer.textureSize: Qt.size(Math.max(1, Math.ceil(width * layout._maskScale)),
+                                       Math.max(1, Math.ceil(height * layout._maskScale)))
 
-            Canvas {
-                id: squircleMask
+            Shape {
                 anchors.fill: parent
-
-                onPaint: {
-                    var ctx = getContext("2d")
-                    ctx.reset()
-
-                    var w = width, h = height
-                    var r = Math.min(layout.cornerRadius, w / 2, h / 2)
-                    var n = Math.max(layout.roundness, 2.0)
-                    var steps = 32
-
-                    // Trace the superellipse corner arc matching the shader's SDF:
-                    //   q = abs(p) - b + r; corner boundary: (qx^n + qy^n)^(1/n) = r
-                    // Parametrically: qx = r*cos(t)^(2/n), qy = r*sin(t)^(2/n)
-                    function cornerX(t) { return r * Math.pow(Math.abs(Math.cos(t)), 2.0 / n) }
-                    function cornerY(t) { return r * Math.pow(Math.abs(Math.sin(t)), 2.0 / n) }
-
-                    ctx.beginPath()
-
-                    // Start at top-left corner, top tangent point
-                    ctx.moveTo(r, 0)
-
-                    // Top edge
-                    ctx.lineTo(w - r, 0)
-
-                    // Top-right corner: from (w-r, 0) to (w, r)
-                    for (var i = 1; i <= steps; i++) {
-                        var t = (1 - i / steps) * Math.PI / 2
-                        ctx.lineTo(w - r + cornerX(t), r - cornerY(t))
+                ShapePath {
+                    fillColor: "white"
+                    strokeWidth: -1
+                    PathPolyline {
+                        path: layout._squirclePath(bgArtMask.width, bgArtMask.height,
+                                                   layout.cornerRadius, layout.roundness)
                     }
-
-                    // Right edge
-                    ctx.lineTo(w, h - r)
-
-                    // Bottom-right corner: from (w, h-r) to (w-r, h)
-                    for (var i = 1; i <= steps; i++) {
-                        var t = (1 - i / steps) * Math.PI / 2
-                        ctx.lineTo(w - r + cornerY(t), h - r + cornerX(t))
-                    }
-
-                    // Bottom edge
-                    ctx.lineTo(r, h)
-
-                    // Bottom-left corner: from (r, h) to (0, h-r)
-                    for (var i = 1; i <= steps; i++) {
-                        var t = (1 - i / steps) * Math.PI / 2
-                        ctx.lineTo(r - cornerX(t), h - r + cornerY(t))
-                    }
-
-                    // Left edge
-                    ctx.lineTo(0, r)
-
-                    // Top-left corner: from (0, r) to (r, 0)
-                    for (var i = 1; i <= steps; i++) {
-                        var t = (1 - i / steps) * Math.PI / 2
-                        ctx.lineTo(r - cornerY(t), r - cornerX(t))
-                    }
-
-                    ctx.closePath()
-                    ctx.fillStyle = "white"
-                    ctx.fill()
                 }
             }
         }
