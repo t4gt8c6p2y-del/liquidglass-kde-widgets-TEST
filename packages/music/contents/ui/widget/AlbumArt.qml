@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -10,11 +9,8 @@ Item {
     property color fallbackColor: "#2c2c2e"
     property color fallbackIconColor: "#ffffff"
 
-    // The rounded-corner mask is rasterised at a higher resolution than the
-    // screen and then filtered down, which is what gives smooth (anti-aliased)
-    // corners instead of a stair-stepped edge.
-    readonly property real _maskScale: 2 * Math.max(1, Screen.devicePixelRatio)
-
+    // The cover is drawn by roundedimage.frag, which clips it to a rounded
+    // rectangle with an analytically anti-aliased edge (no mask texture).
     Image {
         id: coverImage
         anchors.fill: parent
@@ -28,24 +24,6 @@ Item {
         cache: false
     }
 
-    Item {
-        id: roundMask
-        anchors.fill: parent
-        visible: false
-        layer.enabled: true
-        layer.smooth: true
-        layer.samples: 4
-        layer.textureSize: Qt.size(Math.max(1, Math.ceil(width * art._maskScale)),
-                                   Math.max(1, Math.ceil(height * art._maskScale)))
-
-        Rectangle {
-            anchors.fill: parent
-            radius: art.radius
-            color: "white"
-            antialiasing: true
-        }
-    }
-
     Rectangle {
         anchors.fill: parent
         color: art.fallbackColor
@@ -54,12 +32,15 @@ Item {
         opacity: 0.3
     }
 
-    MultiEffect {
+    ShaderEffect {
         anchors.fill: parent
-        source: coverImage
-        maskEnabled: true
-        maskSource: roundMask
         visible: art.artUrl !== ""
+        fragmentShader: Qt.resolvedUrl("roundedimage.frag.qsb")
+        property variant source: coverImage
+        property size size: Qt.size(width, height)
+        property real radius: art.radius
+        property real roundness: 2.0
+        property real gradientOn: 0.0
     }
 
     Kirigami.Icon {

@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import QtQuick.Shapes
 
 Item {
     id: layout
@@ -34,107 +33,30 @@ Item {
 
     clip: true
 
-    // Supersampling factor for the squircle mask (see bgArtMask below).
-    readonly property real _maskScale: 2 * Math.max(1, Screen.devicePixelRatio)
-
-    // Superellipse outline matching the glass shader's SDF:
-    //   q = abs(p) - b + r; corner boundary: (qx^n + qy^n)^(1/n) = r
-    // parametrically: qx = r*cos(t)^(2/n), qy = r*sin(t)^(2/n)
-    function _squirclePath(w, h, cr, rn) {
-        var r = Math.min(cr, w / 2, h / 2)
-        var n = Math.max(rn, 2.0)
-        var steps = 48
-        var pts = []
-        function cx(t) { return r * Math.pow(Math.abs(Math.cos(t)), 2.0 / n) }
-        function cy(t) { return r * Math.pow(Math.abs(Math.sin(t)), 2.0 / n) }
-        var i, t
-
-        pts.push(Qt.point(r, 0))
-        pts.push(Qt.point(w - r, 0))
-        for (i = 1; i <= steps; i++) {            // top-right
-            t = (1 - i / steps) * Math.PI / 2
-            pts.push(Qt.point(w - r + cx(t), r - cy(t)))
-        }
-        pts.push(Qt.point(w, h - r))
-        for (i = 1; i <= steps; i++) {            // bottom-right
-            t = (1 - i / steps) * Math.PI / 2
-            pts.push(Qt.point(w - r + cy(t), h - r + cx(t)))
-        }
-        pts.push(Qt.point(r, h))
-        for (i = 1; i <= steps; i++) {            // bottom-left
-            t = (1 - i / steps) * Math.PI / 2
-            pts.push(Qt.point(r - cx(t), h - r + cy(t)))
-        }
-        pts.push(Qt.point(0, r))
-        for (i = 1; i <= steps; i++) {            // top-left
-            t = (1 - i / steps) * Math.PI / 2
-            pts.push(Qt.point(r - cy(t), r - cx(t)))
-        }
-        return pts
+    // Album art as full background with gradient fade-out toward bottom.
+    // roundedimage.frag clips it to the same squircle as the glass shader
+    // (analytic anti-aliased edge) and applies the black gradient.
+    Image {
+        id: bgArtImage
+        anchors.fill: parent
+        source: layout.albumArt
+        fillMode: Image.PreserveAspectCrop
+        smooth: true
+        mipmap: true
+        visible: false
+        layer.enabled: true
+        layer.smooth: true
     }
 
-    // Album art as full background with gradient fade-out toward bottom
-    Item {
-        id: bgArtContainer
+    ShaderEffect {
         anchors.fill: parent
         visible: layout.albumArt !== ""
-
-        Item {
-            id: bgArtSource
-            anchors.fill: parent
-            visible: false
-            layer.enabled: true
-            layer.smooth: true
-
-            Image {
-                anchors.fill: parent
-                source: layout.albumArt
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                mipmap: true
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                gradient: Gradient {
-                    GradientStop { position: 0.0;  color: Qt.rgba(0, 0, 0, 0.35) }
-                    GradientStop { position: 0.35; color: Qt.rgba(0, 0, 0, 0.45) }
-                    GradientStop { position: 0.85; color: Qt.rgba(0, 0, 0, 0.90) }
-                    GradientStop { position: 1.0;  color: Qt.rgba(0, 0, 0, 0.97) }
-                }
-            }
-        }
-
-        Item {
-            id: bgArtMask
-            anchors.fill: parent
-            visible: false
-            layer.enabled: true
-            layer.smooth: true
-            layer.samples: 4
-            layer.textureSize: Qt.size(Math.max(1, Math.ceil(width * layout._maskScale)),
-                                       Math.max(1, Math.ceil(height * layout._maskScale)))
-
-            Shape {
-                anchors.fill: parent
-                ShapePath {
-                    fillColor: "white"
-                    strokeWidth: -1
-                    PathPolyline {
-                        path: layout._squirclePath(bgArtMask.width, bgArtMask.height,
-                                                   layout.cornerRadius, layout.roundness)
-                    }
-                }
-            }
-        }
-
-        MultiEffect {
-            anchors.fill: parent
-            source: bgArtSource
-            maskEnabled: true
-            maskSource: bgArtMask
-            visible: layout.albumArt !== ""
-        }
+        fragmentShader: Qt.resolvedUrl("roundedimage.frag.qsb")
+        property variant source: bgArtImage
+        property size size: Qt.size(width, height)
+        property real radius: layout.cornerRadius
+        property real roundness: layout.roundness
+        property real gradientOn: 1.0
     }
 
     // Fallback icon when no album art
