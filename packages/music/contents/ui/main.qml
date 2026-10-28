@@ -115,15 +115,29 @@ PlasmoidItem {
         property bool canPlay: true
         property bool canPause: true
 
-        function Play()      { root._kcSend("Play") }
-        function Pause()     { root._kcSend("Pause") }
-        function PlayPause() { root._kcSend(playbackStatus === Mpris.PlaybackStatus.Playing ? "Pause" : "Play") }
-        function Next()      { root._kcSend("Next") }
-        function Previous()  { root._kcSend("Previous") }
-        function Seek(offsetUs) { root._kcSeek(Math.max(0, Math.round((position + offsetUs) / 1000))) }
+        // Same names as the MPRIS methods, but lower-case (QML rejects
+        // upper-case method names); root._playerCall() maps one to the other.
+        function invoke(name, arg) {
+            if (name === "Play")           root._kcSend("Play")
+            else if (name === "Pause")     root._kcSend("Pause")
+            else if (name === "PlayPause") root._kcSend(playbackStatus === Mpris.PlaybackStatus.Playing ? "Pause" : "Play")
+            else if (name === "Next")      root._kcSend("Next")
+            else if (name === "Previous")  root._kcSend("Previous")
+            else if (name === "Seek")      root._kcSeek(Math.max(0, Math.round((position + arg) / 1000)))
+        }
     }
 
     readonly property bool _isKc: _activePlayer === kcPlayer
+
+    // Calls an MPRIS method (Play, Pause, PlayPause, Next, Previous, Seek) on
+    // whichever player is active, KDE Connect or a regular MPRIS player.
+    function _playerCall(name, arg) {
+        var p = root._activePlayer
+        if (!p) return
+        if (p === kcPlayer) kcPlayer.invoke(name, arg)
+        else if (arg === undefined) p[name]()
+        else p[name](arg)
+    }
 
     readonly property string _kcScript:
         decodeURIComponent(Qt.resolvedUrl("scripts/kdeconnect-media.sh").toString().replace(/^file:\/\//, ""))
@@ -673,7 +687,7 @@ PlasmoidItem {
         repeat: false
         onTriggered: {
             if (root._activePlayer && root.isPlaying) {
-                root._activePlayer.Pause()
+                root._playerCall("Pause")
                 artResumeTimer.start()
             }
         }
@@ -684,7 +698,7 @@ PlasmoidItem {
         interval: 80
         repeat: false
         onTriggered: {
-            if (root._activePlayer) root._activePlayer.Play()
+            if (root._activePlayer) root._playerCall("Play")
         }
     }
 
@@ -698,24 +712,24 @@ PlasmoidItem {
 
     function togglePlaying() {
         if (!root._activePlayer) return
-        root._activePlayer.PlayPause()
+        root._playerCall("PlayPause")
     }
     function next() {
         if (!root._activePlayer) return
         root._flipDirection = -1
-        root._activePlayer.Next()
+        root._playerCall("Next")
     }
     function previous() {
         if (!root._activePlayer) return
         root._flipDirection = 1
-        root._activePlayer.Previous()
+        root._playerCall("Previous")
     }
     function seek(positionUs) {
         if (!root._activePlayer) return
         if (root._lengthInMs) return   // Bluetooth (AVRCP) players cannot seek
         var currentPos = root._activePlayer.position ?? root.position
         var offset = positionUs - currentPos
-        root._activePlayer.Seek(offset)
+        root._playerCall("Seek", offset)
         root.position = positionUs
         root._lastPosTick = 0
     }
