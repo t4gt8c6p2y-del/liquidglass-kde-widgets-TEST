@@ -761,7 +761,12 @@ PlasmoidItem {
 
     function _scheduleArtRefresh() {
         if (!plasmoid.configuration.artRefreshEnabled) return
-        if (root._lengthInMs || root._isKc) return   // never pause a phone's playback
+        // This trick pauses then resumes the player. On a phone (Bluetooth or
+        // KDE Connect) that would make Android move its audio to this PC, so it
+        // is only done for real desktop players (browsers have a desktop entry,
+        // BlueZ's phone player has none).
+        if (root._isKc || root._lengthInMs) return
+        if (!(root._activePlayer?.desktopEntry)) return
         artRefreshTimer.stop()
         artResumeTimer.stop()
         if (root.isPlaying) artRefreshTimer.start()
@@ -843,6 +848,8 @@ PlasmoidItem {
     onAlbumArtChanged: {
         if (albumArt !== "") {
             sampleCanvas.loadImage(albumArt)
+            if (sampleCanvas.isImageLoaded(albumArt) && albumArt !== _lastSampledUrl)
+                sampleCanvas.requestPaint()
         } else {
             _hasSampledColor = false
             _sampledTint = "#000000"
@@ -964,6 +971,7 @@ PlasmoidItem {
             // the source cover is bright, so its content must stay light.
             root._sampledIsDark = true
             root._hasSampledColor = true
+            root._lastSampledUrl = url
         }
     }
 

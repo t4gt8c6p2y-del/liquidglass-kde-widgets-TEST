@@ -235,33 +235,18 @@ Item {
         anchors.right: parent.right
         anchors.topMargin: layout._m
         anchors.rightMargin: layout._m
-        width: lyricsBtnRow.width + Math.round(layout._s * 0.08)
+        width: height
         height: Math.round(layout._s * 0.09)
         radius: height / 2
         color: layout.lyricsActive ? layout.lyricsAccentColor : Qt.rgba(1, 1, 1, 0.30)
         Behavior on color { ColorAnimation { duration: 280 } }
 
-        Row {
-            id: lyricsBtnRow
+        Image {
             anchors.centerIn: parent
-            spacing: Math.round(layout._s * 0.025)
-
-            Image {
-                source: Qt.resolvedUrl("../icons/lyrics.svg")
-                width: Math.round(layout._s * 0.0726)
-                height: width
-                anchors.verticalCenter: parent.verticalCenter
-                smooth: true
-            }
-
-            Text {
-                text: i18n("Lyrics")
-                color: "#ffffff"
-                font.pixelSize: Math.max(8, Math.round(layout._s * 0.05))
-                font.weight: Font.Medium
-                font.family: layout.fontFamily
-                anchors.verticalCenter: parent.verticalCenter
-            }
+            source: Qt.resolvedUrl("../icons/lyrics.svg")
+            width: Math.round(layout._s * 0.0726)
+            height: width
+            smooth: true
         }
 
         MouseArea {
