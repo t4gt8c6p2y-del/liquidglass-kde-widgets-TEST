@@ -1,0 +1,562 @@
+# macOS Weather - Translation Template
+# Translators:
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_com.jaxparrow07.macoswidgets.weather 1.3\n"
+"Report-Msgid-Bugs-To: https://github.com/jaxparrow07/macos-widgets/issues\n"
+"POT-Creation-Date: 2026-10-29 22:23+0000\n"
+"PO-Revision-Date: 2026-10-29 22:24+0000\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:29
+msgid "Glass Style"
+msgstr "Style verre"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:38
+msgid "Apply Copied Style"
+msgstr "Appliquer le style copié"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:49
+#: packages/weather/contents/ui/components/WidgetActions.qml:64
+msgid "Buy Me a Coffee"
+msgstr "Offrez-moi un café"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:115
+msgid "Support Liquid Glass Widgets"
+msgstr "Soutenir Liquid Glass Widgets"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:125
+msgid "Opening your browser…"
+msgstr "Ouverture de votre navigateur…"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:126
+msgid ""
+"This opens buymeacoffee.com in your web browser. Thanks for considering it!"
+msgstr ""
+"Cela ouvre buymeacoffee.com dans votre navigateur web. Merci d’y penser !"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:157
+msgid "Close"
+msgstr "Fermer"
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:157
+msgid "Not now"
+msgstr "Pas maintenant"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:19
+msgid "Loading..."
+msgstr "Chargement…"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:123
+msgid "Clear"
+msgstr "Dégagé"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:124
+msgid "Mainly Clear"
+msgstr "Plutôt dégagé"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:125
+msgid "Partly Cloudy"
+msgstr "Partiellement nuageux"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:126
+msgid "Overcast"
+msgstr "Couvert"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:127
+msgid "Fog"
+msgstr "Brouillard"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:128
+msgid "Rime Fog"
+msgstr "Brouillard givrant"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:129
+msgid "Light Drizzle"
+msgstr "Bruine légère"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:130
+msgid "Drizzle"
+msgstr "Bruine"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:131
+msgid "Dense Drizzle"
+msgstr "Bruine dense"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:132
+msgid "Freezing Drizzle"
+msgstr "Bruine verglaçante"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:133
+msgid "Heavy Freezing Drizzle"
+msgstr "Forte bruine verglaçante"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:134
+msgid "Slight Rain"
+msgstr "Pluie faible"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:135
+msgid "Rain"
+msgstr "Pluie"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:136
+msgid "Heavy Rain"
+msgstr "Forte pluie"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:137
+msgid "Freezing Rain"
+msgstr "Pluie verglaçante"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:138
+msgid "Heavy Freezing Rain"
+msgstr "Forte pluie verglaçante"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:139
+msgid "Slight Snow"
+msgstr "Faible neige"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:140
+msgid "Snow"
+msgstr "Neige"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:141
+msgid "Heavy Snow"
+msgstr "Forte neige"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:142
+msgid "Snow Grains"
+msgstr "Neige en grains"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:143
+msgid "Light Showers"
+msgstr "Averses légères"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:144
+msgid "Showers"
+msgstr "Averses"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:145
+msgid "Heavy Showers"
+msgstr "Fortes averses"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:146
+msgid "Light Snow Showers"
+msgstr "Averses de neige légères"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:147
+msgid "Heavy Snow Showers"
+msgstr "Fortes averses de neige"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:148
+msgid "Thunderstorm"
+msgstr "Orage"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:149
+msgid "Thunderstorm with Hail"
+msgstr "Orage avec grêle"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:150
+msgid "Heavy Thunderstorm"
+msgstr "Violent orage"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:151
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:169
+msgctxt "compass direction: north"
+msgid "N"
+msgstr "N"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:170
+msgctxt "compass direction: north-east"
+msgid "NE"
+msgstr "NE"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:171
+msgctxt "compass direction: east"
+msgid "E"
+msgstr "E"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:172
+msgctxt "compass direction: south-east"
+msgid "SE"
+msgstr "SE"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:173
+msgctxt "compass direction: south"
+msgid "S"
+msgstr "S"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:174
+msgctxt "compass direction: south-west"
+msgid "SW"
+msgstr "SO"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:175
+msgctxt "compass direction: west"
+msgid "W"
+msgstr "O"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:176
+msgctxt "compass direction: north-west"
+msgid "NW"
+msgstr "NO"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:227
+msgid "Location not found"
+msgstr "Lieu introuvable"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:372
+msgid "Precipitation expected today"
+msgstr "Précipitations prévues aujourd’hui"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:374
+msgid "Precipitation expected tomorrow"
+msgstr "Précipitations prévues demain"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:376
+msgid "No precipitation for %1 day"
+msgid_plural "No precipitation for %1 days"
+msgstr[0] "Aucune précipitation pendant %1 jour"
+msgstr[1] "Aucune précipitation pendant %1 jours"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:414
+msgid "Sunrise"
+msgstr "Lever"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:425
+msgid "Sunset"
+msgstr "Coucher"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:119
+msgid "Style applied. Press Apply to keep it."
+msgstr "Style appliqué. Cliquez sur Appliquer pour le conserver."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:121
+msgid "The clipboard doesn't contain a copied style."
+msgstr "Le presse-papiers ne contient aucun style copié."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:148
+msgid "Style"
+msgstr "Style"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:149
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:166
+msgid "Glass"
+msgstr "Verre"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:150
+msgid "Blur & performance"
+msgstr "Flou et performances"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:165
+msgid "Style:"
+msgstr "Style :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:166
+msgid "Solid"
+msgstr "Opaque"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:171
+msgid "Appearance:"
+msgstr "Apparence :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:172
+msgid "Dark"
+msgstr "Sombre"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:172
+msgid "Light"
+msgstr "Clair"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:172
+msgid "Follow system"
+msgstr "Suivre le système"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:177
+msgid "Glass tint:"
+msgstr "Teinte du verre :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:180
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:288
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:302
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:309
+#, javascript-format
+msgctxt "percentage"
+msgid "%1%"
+msgstr "%1%"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:185
+msgid "Shape"
+msgstr "Forme"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:191
+msgid "Corner radius:"
+msgstr "Rayon des coins :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:194
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:281
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:349
+msgctxt "pixels"
+msgid "%1 px"
+msgstr "%1 px"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:199
+msgid "Corner smoothness:"
+msgstr "Arrondi des coins :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:218
+msgid "Share"
+msgstr "Partager"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:222
+msgid "Style preset:"
+msgstr "Préréglage de style :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:227
+msgid "Copy style"
+msgstr "Copier le style"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:232
+msgid "Copied. Paste it into another Liquid Glass widget."
+msgstr "Copié. Collez-le dans un autre widget Liquid Glass."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:238
+msgid "Paste style"
+msgstr "Coller le style"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:267
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:336
+msgid "These settings only apply to the Glass style."
+msgstr "Ces réglages ne s’appliquent qu’au style Verre."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:279
+msgid "Edge thickness:"
+msgstr "Épaisseur des bords :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:286
+msgid "Refraction strength:"
+msgstr "Intensité de la réfraction :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:293
+msgid "Refraction index:"
+msgstr "Indice de réfraction :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:300
+msgid "Color fringing:"
+msgstr "Franges colorées :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:307
+msgid "Edge highlight:"
+msgstr "Reflet des bords :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:314
+msgid "Reset glass settings"
+msgstr "Réinitialiser les réglages du verre"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:347
+msgid "Blur radius:"
+msgstr "Rayon du flou :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:349
+msgid "Off"
+msgstr "Désactivé"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:354
+msgid "Blur quality:"
+msgstr "Qualité du flou :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:355
+msgid "Performance (Dual Kawase)"
+msgstr "Performance (Dual Kawase)"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:355
+msgid "Quality (Gaussian)"
+msgstr "Qualité (gaussien)"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:363
+msgid "Smoother blur, but uses more GPU."
+msgstr "Flou plus doux, mais utilise davantage le GPU."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:368
+msgid "Animated wallpapers:"
+msgstr "Fonds d’écran animés :"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:369
+msgid "Update the glass every frame"
+msgstr "Mettre à jour le verre à chaque image"
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:377
+msgid ""
+"Runs at about 60 FPS and can noticeably increase CPU/GPU usage. Only needed "
+"for video or animated wallpapers."
+msgstr ""
+"Tourne à environ 60 images/s et peut nettement augmenter l’utilisation du "
+"CPU/GPU. Nécessaire uniquement pour les fonds d’écran vidéo ou animés."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:378
+msgid ""
+"Only needed for video or animated wallpapers. Static wallpapers and "
+"slideshows update automatically."
+msgstr ""
+"Nécessaire uniquement pour les fonds d’écran vidéo ou animés. Les fonds "
+"fixes et les diaporamas se mettent à jour automatiquement."
+
+#: packages/weather/contents/ui/config/GlassAppearancePage.qml:383
+msgid "Reset blur settings"
+msgstr "Réinitialiser les réglages du flou"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:39
+msgid "Calendar"
+msgstr "Calendrier"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:40
+msgid "Clock"
+msgstr "Horloge"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:41
+msgid "World Clock"
+msgstr "Horloge mondiale"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:42
+msgid "Timer"
+msgstr "Minuteur"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:43
+#: packages/weather/contents/config/config.qml:6
+msgid "Weather"
+msgstr "Météo"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:44
+msgid "Music"
+msgstr "Musique"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:58
+msgid "Liquid Glass Widgets"
+msgstr "Liquid Glass Widgets"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:64
+msgid ""
+"A set of macOS-Tahoe style widgets for KDE Plasma, all sharing one liquid-"
+"glass backdrop."
+msgstr ""
+"Un ensemble de widgets de style macOS Tahoe pour KDE Plasma, partageant tous"
+" le même fond en verre liquide."
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:77
+msgid "Widgets in this set"
+msgstr "Widgets de cet ensemble"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:108
+msgid "Browse and install the full set on <a href=\"%1\">GitHub</a>."
+msgstr "Parcourez et installez l’ensemble complet sur <a href=\"%1\">GitHub</a>."
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:173
+msgid "Also try out: Nothing Widgets"
+msgstr "À essayer aussi : Nothing Widgets"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:181
+msgid ""
+"Check out my other widget set. Nothing OS inspired widgets for KDE Plasma."
+msgstr ""
+"Découvrez mon autre ensemble de widgets, inspirés de Nothing OS, pour KDE "
+"Plasma."
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:187
+msgid "Get Nothing Widgets"
+msgstr "Obtenir Nothing Widgets"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:224
+msgid "Buy me a coffee"
+msgstr "Offrez-moi un café"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:231
+msgid "Website"
+msgstr "Site web"
+
+#: packages/weather/contents/ui/config/ConfigAbout.qml:238
+msgid "Reddit"
+msgstr "Reddit"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:78
+msgid "Location"
+msgstr "Lieu"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:84
+msgid ""
+"Start typing a city name and pick a result to set your weather location."
+msgstr ""
+"Commencez à saisir un nom de ville et choisissez un résultat pour définir le"
+" lieu de la météo."
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:93
+msgid "City name (e.g. London)"
+msgstr "Nom de ville (p. ex. Paris)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:143
+msgid "Temperature unit:"
+msgstr "Unité de température :"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
+msgid "Celsius (°C)"
+msgstr "Celsius (°C)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
+msgid "Fahrenheit (°F)"
+msgstr "Fahrenheit (°F)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:169
+msgid ""
+"Weather data by <a href=\"%1\">Open-Meteo.com</a>, licensed under <a "
+"href=\"%2\">CC BY 4.0</a>. No account or API key is needed.<br><br>Place "
+"names you type are looked up with the Open-Meteo Geocoding API (geocoding-"
+"api.open-meteo.com), and forecasts for the chosen location's coordinates "
+"come from api.open-meteo.com. Selecting a result stores its coordinates, so "
+"refreshes skip the lookup.<br><br>Open-Meteo says it collects no personal "
+"data; its web server logs, which may include coordinates and IP addresses, "
+"are deleted after 90 days. See its <a href=\"%3\">Terms &amp; Privacy</a>."
+msgstr ""
+"Données météo fournies par <a href=\"%1\">Open-Meteo.com</a>, sous licence "
+"<a href=\"%2\">CC BY 4.0</a>. Aucun compte ni clé d’API n’est "
+"nécessaire.<br><br>Les noms de lieux que vous saisissez sont recherchés avec"
+" l’API de géocodage d’Open-Meteo (geocoding-api.open-meteo.com), et les "
+"prévisions pour les coordonnées du lieu choisi proviennent de api.open-"
+"meteo.com. Sélectionner un résultat enregistre ses coordonnées, ce qui évite"
+" la recherche lors des actualisations.<br><br>Open-Meteo indique ne "
+"collecter aucune donnée personnelle ; les journaux de son serveur web, qui "
+"peuvent contenir des coordonnées et des adresses IP, sont supprimés après 90"
+" jours. Consultez ses <a href=\"%3\">Conditions et confidentialité</a>."
+
+#: packages/weather/contents/ui/main.qml:17
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: packages/weather/contents/ui/main.qml:183
+msgid "Precipitation"
+msgstr "Précipitations"
+
+#: packages/weather/contents/ui/main.qml:202
+msgid "Wind"
+msgstr "Vent"
+
+#: packages/weather/contents/ui/main.qml:282
+#: packages/weather/contents/ui/main.qml:408
+msgctxt "high and low temperature of the day"
+msgid "H:%1°  L:%2°"
+msgstr "H:%1°  B:%2°"
+
+#: packages/weather/contents/config/config.qml:11
+msgid "Appearance"
+msgstr "Apparence"
+
+#: packages/weather/contents/config/config.qml:16
+msgid "More & Support"
+msgstr "Plus et assistance"

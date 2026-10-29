@@ -1,0 +1,362 @@
+# Weather (Panel) - Translation Template
+# Translators:
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_com.jaxparrow07.macoswidgets.weatherpanel 1.3\n"
+"Report-Msgid-Bugs-To: https://github.com/jaxparrow07/macos-widgets/issues\n"
+"POT-Creation-Date: 2026-10-29 22:23+0000\n"
+"PO-Revision-Date: 2026-10-29 22:24+0000\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:29
+msgid "Glass Style"
+msgstr "Style verre"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:38
+msgid "Apply Copied Style"
+msgstr "Appliquer le style copié"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:49
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:64
+msgid "Buy Me a Coffee"
+msgstr "Offrez-moi un café"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:115
+msgid "Support Liquid Glass Widgets"
+msgstr "Soutenir Liquid Glass Widgets"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:125
+msgid "Opening your browser…"
+msgstr "Ouverture de votre navigateur…"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:126
+msgid ""
+"This opens buymeacoffee.com in your web browser. Thanks for considering it!"
+msgstr ""
+"Cela ouvre buymeacoffee.com dans votre navigateur web. Merci d’y penser !"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:157
+msgid "Close"
+msgstr "Fermer"
+
+#: packages/weather-panel/contents/ui/components/WidgetActions.qml:157
+msgid "Not now"
+msgstr "Pas maintenant"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:19
+msgid "Loading..."
+msgstr "Chargement…"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:123
+msgid "Clear"
+msgstr "Dégagé"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:124
+msgid "Mainly Clear"
+msgstr "Plutôt dégagé"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:125
+msgid "Partly Cloudy"
+msgstr "Partiellement nuageux"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:126
+msgid "Overcast"
+msgstr "Couvert"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:127
+msgid "Fog"
+msgstr "Brouillard"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:128
+msgid "Rime Fog"
+msgstr "Brouillard givrant"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:129
+msgid "Light Drizzle"
+msgstr "Bruine légère"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:130
+msgid "Drizzle"
+msgstr "Bruine"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:131
+msgid "Dense Drizzle"
+msgstr "Bruine dense"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:132
+msgid "Freezing Drizzle"
+msgstr "Bruine verglaçante"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:133
+msgid "Heavy Freezing Drizzle"
+msgstr "Forte bruine verglaçante"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:134
+msgid "Slight Rain"
+msgstr "Pluie faible"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:135
+msgid "Rain"
+msgstr "Pluie"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:136
+msgid "Heavy Rain"
+msgstr "Forte pluie"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:137
+msgid "Freezing Rain"
+msgstr "Pluie verglaçante"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:138
+msgid "Heavy Freezing Rain"
+msgstr "Forte pluie verglaçante"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:139
+msgid "Slight Snow"
+msgstr "Faible neige"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:140
+msgid "Snow"
+msgstr "Neige"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:141
+msgid "Heavy Snow"
+msgstr "Forte neige"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:142
+msgid "Snow Grains"
+msgstr "Neige en grains"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:143
+msgid "Light Showers"
+msgstr "Averses légères"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:144
+msgid "Showers"
+msgstr "Averses"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:145
+msgid "Heavy Showers"
+msgstr "Fortes averses"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:146
+msgid "Light Snow Showers"
+msgstr "Averses de neige légères"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:147
+msgid "Heavy Snow Showers"
+msgstr "Fortes averses de neige"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:148
+msgid "Thunderstorm"
+msgstr "Orage"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:149
+msgid "Thunderstorm with Hail"
+msgstr "Orage avec grêle"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:150
+msgid "Heavy Thunderstorm"
+msgstr "Violent orage"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:151
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:169
+msgctxt "compass direction: north"
+msgid "N"
+msgstr "N"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:170
+msgctxt "compass direction: north-east"
+msgid "NE"
+msgstr "NE"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:171
+msgctxt "compass direction: east"
+msgid "E"
+msgstr "E"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:172
+msgctxt "compass direction: south-east"
+msgid "SE"
+msgstr "SE"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:173
+msgctxt "compass direction: south"
+msgid "S"
+msgstr "S"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:174
+msgctxt "compass direction: south-west"
+msgid "SW"
+msgstr "SO"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:175
+msgctxt "compass direction: west"
+msgid "W"
+msgstr "O"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:176
+msgctxt "compass direction: north-west"
+msgid "NW"
+msgstr "NO"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:227
+msgid "Location not found"
+msgstr "Lieu introuvable"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:372
+msgid "Precipitation expected today"
+msgstr "Précipitations prévues aujourd’hui"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:374
+msgid "Precipitation expected tomorrow"
+msgstr "Précipitations prévues demain"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:376
+msgid "No precipitation for %1 day"
+msgid_plural "No precipitation for %1 days"
+msgstr[0] "Aucune précipitation pendant %1 jour"
+msgstr[1] "Aucune précipitation pendant %1 jours"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:414
+msgid "Sunrise"
+msgstr "Lever"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:425
+msgid "Sunset"
+msgstr "Coucher"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:39
+msgid "Calendar"
+msgstr "Calendrier"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:40
+msgid "Clock"
+msgstr "Horloge"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:41
+msgid "World Clock"
+msgstr "Horloge mondiale"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:42
+msgid "Timer"
+msgstr "Minuteur"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:43
+#: packages/weather-panel/contents/config/config.qml:6
+msgid "Weather"
+msgstr "Météo"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:44
+msgid "Music"
+msgstr "Musique"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:58
+msgid "Liquid Glass Widgets"
+msgstr "Liquid Glass Widgets"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:64
+msgid ""
+"A set of macOS-Tahoe style widgets for KDE Plasma, all sharing one liquid-"
+"glass backdrop."
+msgstr ""
+"Un ensemble de widgets de style macOS Tahoe pour KDE Plasma, partageant tous"
+" le même fond en verre liquide."
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:77
+msgid "Widgets in this set"
+msgstr "Widgets de cet ensemble"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:108
+msgid "Browse and install the full set on <a href=\"%1\">GitHub</a>."
+msgstr "Parcourez et installez l’ensemble complet sur <a href=\"%1\">GitHub</a>."
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:173
+msgid "Also try out: Nothing Widgets"
+msgstr "À essayer aussi : Nothing Widgets"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:181
+msgid ""
+"Check out my other widget set. Nothing OS inspired widgets for KDE Plasma."
+msgstr ""
+"Découvrez mon autre ensemble de widgets, inspirés de Nothing OS, pour KDE "
+"Plasma."
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:187
+msgid "Get Nothing Widgets"
+msgstr "Obtenir Nothing Widgets"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:224
+msgid "Buy me a coffee"
+msgstr "Offrez-moi un café"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:231
+msgid "Website"
+msgstr "Site web"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:238
+msgid "Reddit"
+msgstr "Reddit"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:78
+msgid "Location"
+msgstr "Lieu"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:84
+msgid ""
+"Start typing a city name and pick a result to set your weather location."
+msgstr ""
+"Commencez à saisir un nom de ville et choisissez un résultat pour définir le"
+" lieu de la météo."
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:93
+msgid "City name (e.g. London)"
+msgstr "Nom de ville (p. ex. Paris)"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:143
+msgid "Temperature unit:"
+msgstr "Unité de température :"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
+msgid "Celsius (°C)"
+msgstr "Celsius (°C)"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
+msgid "Fahrenheit (°F)"
+msgstr "Fahrenheit (°F)"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:164
+msgid ""
+"Locations are resolved with the Open-Meteo Geocoding API (geocoding-"
+"api.open-meteo.com) and forecasts are fetched from Open-Meteo (api.open-"
+"meteo.com). No account or API key is required. Selecting a result stores its"
+" coordinates directly, so weather refreshes skip the geocoding step."
+msgstr ""
+"Les lieux sont résolus avec l’API de géocodage d’Open-Meteo (geocoding-"
+"api.open-meteo.com) et les prévisions sont récupérées auprès d’Open-Meteo "
+"(api.open-meteo.com). Aucun compte ni clé d’API n’est nécessaire. "
+"Sélectionner un résultat enregistre directement ses coordonnées, ce qui "
+"évite l’étape de géocodage lors des actualisations."
+
+#: packages/weather-panel/contents/ui/main.qml:19
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: packages/weather-panel/contents/ui/main.qml:198
+msgctxt "high and low temperature of the day"
+msgid "H:%1°  L:%2°"
+msgstr "H:%1°  B:%2°"
+
+#: packages/weather-panel/contents/config/config.qml:11
+msgid "More & Support"
+msgstr "Plus et assistance"

@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.jaxparrow07.macoswidgets.weather 1.0\n"
 "Report-Msgid-Bugs-To: https://github.com/jaxparrow07/macos-widgets/issues\n"
-"POT-Creation-Date: 2026-10-11 17:48+0530\n"
+"POT-Creation-Date: 2026-10-29 22:23+0000\n"
 "PO-Revision-Date: 2026-06-14 18:01+0530\n"
 "Last-Translator: Russian translation contributors\n"
 "Language-Team: Russian\n"
@@ -16,56 +16,225 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: packages/weather/contents/config/config.qml:6
-#: packages/weather/contents/ui/config/ConfigAbout.qml:43
-msgid "Weather"
-msgstr "Погода"
-
-#: packages/weather/contents/config/config.qml:11
-msgid "Appearance"
-msgstr "Оформление"
-
-#: packages/weather/contents/config/config.qml:16
-msgid "More & Support"
+#: packages/weather/contents/ui/components/WidgetActions.qml:29
+msgid "Glass Style"
 msgstr ""
 
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:78
-msgid "Location"
-msgstr "Местоположение"
-
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:84
-msgid ""
-"Start typing a city name and pick a result to set your weather location."
+#: packages/weather/contents/ui/components/WidgetActions.qml:38
+msgid "Apply Copied Style"
 msgstr ""
-"Начните вводить название города и выберите результат, чтобы задать "
-"местоположение для прогноза погоды."
 
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:93
-msgid "City name (e.g. London)"
-msgstr "Название города (например, Москва)"
+#: packages/weather/contents/ui/components/WidgetActions.qml:49
+#: packages/weather/contents/ui/components/WidgetActions.qml:64
+msgid "Buy Me a Coffee"
+msgstr ""
 
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:143
-msgid "Temperature unit:"
-msgstr "Единица температуры:"
+#: packages/weather/contents/ui/components/WidgetActions.qml:115
+msgid "Support Liquid Glass Widgets"
+msgstr ""
 
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
-msgid "Celsius (°C)"
-msgstr "Цельсий (°C)"
+#: packages/weather/contents/ui/components/WidgetActions.qml:125
+msgid "Opening your browser…"
+msgstr ""
 
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
-msgid "Fahrenheit (°F)"
-msgstr "Фаренгейт (°F)"
-
-#: packages/weather/contents/ui/config/ConfigGeneral.qml:169
+#: packages/weather/contents/ui/components/WidgetActions.qml:126
 msgid ""
-"Weather data by <a href=\"%1\">Open-Meteo.com</a>, licensed under <a "
-"href=\"%2\">CC BY 4.0</a>. No account or API key is needed.<br><br>Place "
-"names you type are looked up with the Open-Meteo Geocoding API (geocoding-"
-"api.open-meteo.com), and forecasts for the chosen location's coordinates "
-"come from api.open-meteo.com. Selecting a result stores its coordinates, so "
-"refreshes skip the lookup.<br><br>Open-Meteo says it collects no personal "
-"data; its web server logs, which may include coordinates and IP addresses, "
-"are deleted after 90 days. See its <a href=\"%3\">Terms &amp; Privacy</a>."
+"This opens buymeacoffee.com in your web browser. Thanks for considering it!"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:157
+msgid "Close"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WidgetActions.qml:157
+msgid "Not now"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:19
+msgid "Loading..."
+msgstr "Загрузка…"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:123
+msgid "Clear"
+msgstr "Ясно"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:124
+msgid "Mainly Clear"
+msgstr "Преимущественно ясно"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:125
+msgid "Partly Cloudy"
+msgstr "Переменная облачность"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:126
+msgid "Overcast"
+msgstr "Пасмурно"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:127
+msgid "Fog"
+msgstr "Туман"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:128
+msgid "Rime Fog"
+msgstr "Туман с изморозью"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:129
+msgid "Light Drizzle"
+msgstr "Небольшая морось"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:130
+msgid "Drizzle"
+msgstr "Морось"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:131
+msgid "Dense Drizzle"
+msgstr "Сильная морось"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:132
+msgid "Freezing Drizzle"
+msgstr "Ледяная морось"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:133
+msgid "Heavy Freezing Drizzle"
+msgstr "Сильная ледяная морось"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:134
+msgid "Slight Rain"
+msgstr "Небольшой дождь"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:135
+msgid "Rain"
+msgstr "Дождь"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:136
+msgid "Heavy Rain"
+msgstr "Сильный дождь"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:137
+msgid "Freezing Rain"
+msgstr "Ледяной дождь"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:138
+msgid "Heavy Freezing Rain"
+msgstr "Сильный ледяной дождь"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:139
+msgid "Slight Snow"
+msgstr "Небольшой снег"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:140
+msgid "Snow"
+msgstr "Снег"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:141
+msgid "Heavy Snow"
+msgstr "Сильный снег"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:142
+msgid "Snow Grains"
+msgstr "Снежная крупа"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:143
+msgid "Light Showers"
+msgstr "Небольшой ливень"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:144
+msgid "Showers"
+msgstr "Ливень"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:145
+msgid "Heavy Showers"
+msgstr "Сильный ливень"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:146
+msgid "Light Snow Showers"
+msgstr "Небольшой снежный заряд"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:147
+msgid "Heavy Snow Showers"
+msgstr "Сильный снежный заряд"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:148
+msgid "Thunderstorm"
+msgstr "Гроза"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:149
+msgid "Thunderstorm with Hail"
+msgstr "Гроза с градом"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:150
+msgid "Heavy Thunderstorm"
+msgstr "Сильная гроза"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:151
+msgid "Unknown"
+msgstr "Неизвестно"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:169
+msgctxt "compass direction: north"
+msgid "N"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:170
+msgctxt "compass direction: north-east"
+msgid "NE"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:171
+msgctxt "compass direction: east"
+msgid "E"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:172
+msgctxt "compass direction: south-east"
+msgid "SE"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:173
+msgctxt "compass direction: south"
+msgid "S"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:174
+msgctxt "compass direction: south-west"
+msgid "SW"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:175
+msgctxt "compass direction: west"
+msgid "W"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:176
+msgctxt "compass direction: north-west"
+msgid "NW"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:227
+msgid "Location not found"
+msgstr "Местоположение не найдено"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:372
+msgid "Precipitation expected today"
+msgstr "Сегодня ожидаются осадки"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:374
+msgid "Precipitation expected tomorrow"
+msgstr "Завтра ожидаются осадки"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:376
+msgid "No precipitation for %1 day"
+msgid_plural "No precipitation for %1 days"
+msgstr[0] "Без осадков %1 день"
+msgstr[1] "Без осадков %1 дня"
+msgstr[2] "Без осадков %1 дней"
+
+#: packages/weather/contents/ui/components/WeatherData.qml:414
+msgid "Sunrise"
+msgstr ""
+
+#: packages/weather/contents/ui/components/WeatherData.qml:425
+msgid "Sunset"
 msgstr ""
 
 #: packages/weather/contents/ui/config/GlassAppearancePage.qml:119
@@ -258,6 +427,11 @@ msgstr ""
 msgid "Timer"
 msgstr ""
 
+#: packages/weather/contents/ui/config/ConfigAbout.qml:43
+#: packages/weather/contents/config/config.qml:6
+msgid "Weather"
+msgstr "Погода"
+
 #: packages/weather/contents/ui/config/ConfigAbout.qml:44
 msgid "Music"
 msgstr ""
@@ -305,6 +479,45 @@ msgstr ""
 msgid "Reddit"
 msgstr ""
 
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:78
+msgid "Location"
+msgstr "Местоположение"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:84
+msgid ""
+"Start typing a city name and pick a result to set your weather location."
+msgstr ""
+"Начните вводить название города и выберите результат, чтобы задать "
+"местоположение для прогноза погоды."
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:93
+msgid "City name (e.g. London)"
+msgstr "Название города (например, Москва)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:143
+msgid "Temperature unit:"
+msgstr "Единица температуры:"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
+msgid "Celsius (°C)"
+msgstr "Цельсий (°C)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:148
+msgid "Fahrenheit (°F)"
+msgstr "Фаренгейт (°F)"
+
+#: packages/weather/contents/ui/config/ConfigGeneral.qml:169
+msgid ""
+"Weather data by <a href=\"%1\">Open-Meteo.com</a>, licensed under <a "
+"href=\"%2\">CC BY 4.0</a>. No account or API key is needed.<br><br>Place "
+"names you type are looked up with the Open-Meteo Geocoding API (geocoding-"
+"api.open-meteo.com), and forecasts for the chosen location's coordinates "
+"come from api.open-meteo.com. Selecting a result stores its coordinates, so "
+"refreshes skip the lookup.<br><br>Open-Meteo says it collects no personal "
+"data; its web server logs, which may include coordinates and IP addresses, "
+"are deleted after 90 days. See its <a href=\"%3\">Terms &amp; Privacy</a>."
+msgstr ""
+
 #: packages/weather/contents/ui/main.qml:17
 msgid "Refresh"
 msgstr ""
@@ -317,178 +530,19 @@ msgstr "Осадки"
 msgid "Wind"
 msgstr "Ветер"
 
-#: packages/weather/contents/ui/components/WidgetActions.qml:29
-msgid "Glass Style"
+#: packages/weather/contents/ui/main.qml:282
+#: packages/weather/contents/ui/main.qml:408
+msgctxt "high and low temperature of the day"
+msgid "H:%1°  L:%2°"
 msgstr ""
 
-#: packages/weather/contents/ui/components/WidgetActions.qml:38
-msgid "Apply Copied Style"
+#: packages/weather/contents/config/config.qml:11
+msgid "Appearance"
+msgstr "Оформление"
+
+#: packages/weather/contents/config/config.qml:16
+msgid "More & Support"
 msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:49
-#: packages/weather/contents/ui/components/WidgetActions.qml:64
-msgid "Buy Me a Coffee"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:115
-msgid "Support Liquid Glass Widgets"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:125
-msgid "Opening your browser…"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:126
-msgid ""
-"This opens buymeacoffee.com in your web browser. Thanks for considering it!"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:157
-msgid "Close"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WidgetActions.qml:157
-msgid "Not now"
-msgstr ""
-
-#: packages/weather/contents/ui/components/WeatherData.qml:19
-msgid "Loading..."
-msgstr "Загрузка…"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:123
-msgid "Clear"
-msgstr "Ясно"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:124
-msgid "Mainly Clear"
-msgstr "Преимущественно ясно"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:125
-msgid "Partly Cloudy"
-msgstr "Переменная облачность"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:126
-msgid "Overcast"
-msgstr "Пасмурно"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:127
-msgid "Fog"
-msgstr "Туман"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:128
-msgid "Rime Fog"
-msgstr "Туман с изморозью"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:129
-msgid "Light Drizzle"
-msgstr "Небольшая морось"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:130
-msgid "Drizzle"
-msgstr "Морось"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:131
-msgid "Dense Drizzle"
-msgstr "Сильная морось"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:132
-msgid "Freezing Drizzle"
-msgstr "Ледяная морось"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:133
-msgid "Heavy Freezing Drizzle"
-msgstr "Сильная ледяная морось"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:134
-msgid "Slight Rain"
-msgstr "Небольшой дождь"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:135
-msgid "Rain"
-msgstr "Дождь"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:136
-msgid "Heavy Rain"
-msgstr "Сильный дождь"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:137
-msgid "Freezing Rain"
-msgstr "Ледяной дождь"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:138
-msgid "Heavy Freezing Rain"
-msgstr "Сильный ледяной дождь"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:139
-msgid "Slight Snow"
-msgstr "Небольшой снег"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:140
-msgid "Snow"
-msgstr "Снег"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:141
-msgid "Heavy Snow"
-msgstr "Сильный снег"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:142
-msgid "Snow Grains"
-msgstr "Снежная крупа"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:143
-msgid "Light Showers"
-msgstr "Небольшой ливень"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:144
-msgid "Showers"
-msgstr "Ливень"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:145
-msgid "Heavy Showers"
-msgstr "Сильный ливень"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:146
-msgid "Light Snow Showers"
-msgstr "Небольшой снежный заряд"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:147
-msgid "Heavy Snow Showers"
-msgstr "Сильный снежный заряд"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:148
-msgid "Thunderstorm"
-msgstr "Гроза"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:149
-msgid "Thunderstorm with Hail"
-msgstr "Гроза с градом"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:150
-msgid "Heavy Thunderstorm"
-msgstr "Сильная гроза"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:151
-msgid "Unknown"
-msgstr "Неизвестно"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:210
-msgid "Location not found"
-msgstr "Местоположение не найдено"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:356
-msgid "Precipitation expected today"
-msgstr "Сегодня ожидаются осадки"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:358
-msgid "Precipitation expected tomorrow"
-msgstr "Завтра ожидаются осадки"
-
-#: packages/weather/contents/ui/components/WeatherData.qml:360
-msgid "No precipitation for %1 day"
-msgid_plural "No precipitation for %1 days"
-msgstr[0] "Без осадков %1 день"
-msgstr[1] "Без осадков %1 дня"
-msgstr[2] "Без осадков %1 дней"
 
 #~ msgid "Applied!"
 #~ msgstr "Применено!"

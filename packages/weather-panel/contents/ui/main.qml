@@ -195,7 +195,7 @@ PlasmoidItem {
 
                     PlasmaComponents.Label {
                         anchors.right: parent.right
-                        text: "H:" + weatherData.highTemp + "°  L:" + weatherData.lowTemp + "°"
+                        text: i18nc("high and low temperature of the day", "H:%1°  L:%2°", weatherData.highTemp, weatherData.lowTemp)
                         opacity: 0.60
                         font.family: sfRegular.name
                         font.pixelSize: full._labelSize

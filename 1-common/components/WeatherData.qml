@@ -165,12 +165,26 @@ QtObject {
     }
 
     function _compassDirection(degrees) {
-        var dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        var dirs = [
+            i18nc("compass direction: north", "N"),
+            i18nc("compass direction: north-east", "NE"),
+            i18nc("compass direction: east", "E"),
+            i18nc("compass direction: south-east", "SE"),
+            i18nc("compass direction: south", "S"),
+            i18nc("compass direction: south-west", "SW"),
+            i18nc("compass direction: west", "W"),
+            i18nc("compass direction: north-west", "NW")
+        ]
         var idx = Math.round(degrees / 45) % 8
         return dirs[idx]
     }
 
     function _formatHour(date) {
+        var loc = Qt.locale()
+        // 24-hour locales (French, German, ...): use the system time format.
+        if (!/a/i.test(loc.timeFormat(Locale.ShortFormat)))
+            return Qt.formatTime(date, loc.timeFormat(Locale.ShortFormat))
+
         var h = date.getHours()
         var m = date.getMinutes()
         var ampm = h >= 12 ? "PM" : "AM"
@@ -191,8 +205,11 @@ QtObject {
         errorMessage = ""
 
         var xhr = new XMLHttpRequest()
+        // City names come back in the system language (fr, de, ...), English otherwise.
+        var lang = Qt.locale().name.split("_")[0].toLowerCase()
+        if (!/^[a-z]{2}$/.test(lang)) lang = "en"
         var url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
-                  encodeURIComponent(location) + "&count=1&language=en&format=json"
+                  encodeURIComponent(location) + "&count=1&language=" + lang + "&format=json"
 
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE) return
@@ -305,7 +322,6 @@ QtObject {
 
     function _processDailyForecast(daily) {
         var days = []
-        var dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
         var minL = Infinity
         var maxH = -Infinity
 
@@ -319,7 +335,7 @@ QtObject {
             if (hi > maxH) maxH = hi
 
             days.push({
-                day: dayNames[d.getDay()],
+                day: Qt.locale().dayName(d.getDay(), Locale.ShortFormat),
                 weatherCode: daily.weather_code[i],
                 high: hi.toString(),
                 low: lo.toString()
@@ -395,7 +411,7 @@ QtObject {
                 temp: "",
                 iconName: "sunrise",
                 isSunEvent: true,
-                sunEventType: "Sunrise"
+                sunEventType: i18n("Sunrise")
             })
         }
         if (sunset && sunset.getTime() > now.getTime() &&
@@ -406,7 +422,7 @@ QtObject {
                 temp: "",
                 iconName: "sunset",
                 isSunEvent: true,
-                sunEventType: "Sunset"
+                sunEventType: i18n("Sunset")
             })
         }
 

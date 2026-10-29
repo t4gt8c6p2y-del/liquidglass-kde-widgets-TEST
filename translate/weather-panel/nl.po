@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: plasma_applet_com.jaxparrow07.macoswidgets.weatherpanel "
 "1.0\n"
 "Report-Msgid-Bugs-To: https://github.com/jaxparrow07/macos-widgets/issues\n"
-"POT-Creation-Date: 2026-10-11 17:48+0530\n"
+"POT-Creation-Date: 2026-10-29 22:23+0000\n"
 "PO-Revision-Date: 2026-06-17 19:47+0200\n"
 "Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
 "Language-Team: \n"
@@ -17,121 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.9\n"
-
-#: packages/weather-panel/contents/config/config.qml:6
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:43
-msgid "Weather"
-msgstr "Weer"
-
-#: packages/weather-panel/contents/config/config.qml:11
-msgid "More & Support"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:78
-msgid "Location"
-msgstr "Plaats"
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:84
-msgid ""
-"Start typing a city name and pick a result to set your weather location."
-msgstr ""
-"Typ een plaatsnaam en klik het juiste resultaat aan om als locatie te "
-"gebruiken."
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:93
-msgid "City name (e.g. London)"
-msgstr "Plaatsnaam (bijv. Amsterdam)"
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:143
-msgid "Temperature unit:"
-msgstr "Temperatuureenheid:"
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
-msgid "Celsius (°C)"
-msgstr "Voorvertoning: 20°C"
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
-msgid "Fahrenheit (°F)"
-msgstr "Imperiaal (°F, mpu, inHg, in)"
-
-#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:164
-msgid ""
-"Locations are resolved with the Open-Meteo Geocoding API (geocoding-api.open-"
-"meteo.com) and forecasts are fetched from Open-Meteo (api.open-meteo.com). "
-"No account or API key is required. Selecting a result stores its coordinates "
-"directly, so weather refreshes skip the geocoding step."
-msgstr ""
-"Er wordt naar plaatsen gezocht aan de hand van de Open-Meteo Geocoding-api "
-"(geocoding-api.open-meteo.com). Weerberichten worden opgehaald van Open-"
-"Meteo (api.open-meteo.com). Hiervoor is geen account of api-sleutel vereist. "
-"Kies een resultaat om de coördinaten direct op te slaan."
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:39
-msgid "Calendar"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:40
-msgid "Clock"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:41
-msgid "World Clock"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:42
-msgid "Timer"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:44
-msgid "Music"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:58
-msgid "Liquid Glass Widgets"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:64
-msgid ""
-"A set of macOS-Tahoe style widgets for KDE Plasma, all sharing one liquid-"
-"glass backdrop."
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:77
-msgid "Widgets in this set"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:108
-msgid "Browse and install the full set on <a href=\"%1\">GitHub</a>."
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:173
-msgid "Also try out: Nothing Widgets"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:181
-msgid ""
-"Check out my other widget set. Nothing OS inspired widgets for KDE Plasma."
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:187
-msgid "Get Nothing Widgets"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:224
-msgid "Buy me a coffee"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:231
-msgid "Website"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:238
-msgid "Reddit"
-msgstr ""
-
-#: packages/weather-panel/contents/ui/main.qml:19
-msgid "Refresh"
-msgstr ""
 
 #: packages/weather-panel/contents/ui/components/WidgetActions.qml:29
 msgid "Glass Style"
@@ -287,20 +172,188 @@ msgstr "Zware onweersbui met hagel"
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: packages/weather-panel/contents/ui/components/WeatherData.qml:210
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:169
+msgctxt "compass direction: north"
+msgid "N"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:170
+msgctxt "compass direction: north-east"
+msgid "NE"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:171
+msgctxt "compass direction: east"
+msgid "E"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:172
+msgctxt "compass direction: south-east"
+msgid "SE"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:173
+msgctxt "compass direction: south"
+msgid "S"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:174
+msgctxt "compass direction: south-west"
+msgid "SW"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:175
+msgctxt "compass direction: west"
+msgid "W"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:176
+msgctxt "compass direction: north-west"
+msgid "NW"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:227
 msgid "Location not found"
 msgstr "Er is geen plaats gevonden"
 
-#: packages/weather-panel/contents/ui/components/WeatherData.qml:356
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:372
 msgid "Precipitation expected today"
 msgstr "Verwachte neerslaghoeveelheid (vandaag)"
 
-#: packages/weather-panel/contents/ui/components/WeatherData.qml:358
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:374
 msgid "Precipitation expected tomorrow"
 msgstr "Verwachte neerslaghoeveelheid (morgen)"
 
-#: packages/weather-panel/contents/ui/components/WeatherData.qml:360
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:376
 msgid "No precipitation for %1 day"
 msgid_plural "No precipitation for %1 days"
 msgstr[0] "Er wordt de komende %1 dag geen neerslag verwacht"
 msgstr[1] "Er wordt de komende %1 dagen geen neerslag verwacht"
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:414
+msgid "Sunrise"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/components/WeatherData.qml:425
+msgid "Sunset"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:39
+msgid "Calendar"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:40
+msgid "Clock"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:41
+msgid "World Clock"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:42
+msgid "Timer"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:43
+#: packages/weather-panel/contents/config/config.qml:6
+msgid "Weather"
+msgstr "Weer"
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:44
+msgid "Music"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:58
+msgid "Liquid Glass Widgets"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:64
+msgid ""
+"A set of macOS-Tahoe style widgets for KDE Plasma, all sharing one liquid-"
+"glass backdrop."
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:77
+msgid "Widgets in this set"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:108
+msgid "Browse and install the full set on <a href=\"%1\">GitHub</a>."
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:173
+msgid "Also try out: Nothing Widgets"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:181
+msgid ""
+"Check out my other widget set. Nothing OS inspired widgets for KDE Plasma."
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:187
+msgid "Get Nothing Widgets"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:224
+msgid "Buy me a coffee"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:231
+msgid "Website"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigAbout.qml:238
+msgid "Reddit"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:78
+msgid "Location"
+msgstr "Plaats"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:84
+msgid ""
+"Start typing a city name and pick a result to set your weather location."
+msgstr ""
+"Typ een plaatsnaam en klik het juiste resultaat aan om als locatie te "
+"gebruiken."
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:93
+msgid "City name (e.g. London)"
+msgstr "Plaatsnaam (bijv. Amsterdam)"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:143
+msgid "Temperature unit:"
+msgstr "Temperatuureenheid:"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
+msgid "Celsius (°C)"
+msgstr "Voorvertoning: 20°C"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:148
+msgid "Fahrenheit (°F)"
+msgstr "Imperiaal (°F, mpu, inHg, in)"
+
+#: packages/weather-panel/contents/ui/config/ConfigGeneral.qml:164
+msgid ""
+"Locations are resolved with the Open-Meteo Geocoding API (geocoding-api.open-"
+"meteo.com) and forecasts are fetched from Open-Meteo (api.open-meteo.com). "
+"No account or API key is required. Selecting a result stores its coordinates "
+"directly, so weather refreshes skip the geocoding step."
+msgstr ""
+"Er wordt naar plaatsen gezocht aan de hand van de Open-Meteo Geocoding-api "
+"(geocoding-api.open-meteo.com). Weerberichten worden opgehaald van Open-"
+"Meteo (api.open-meteo.com). Hiervoor is geen account of api-sleutel vereist. "
+"Kies een resultaat om de coördinaten direct op te slaan."
+
+#: packages/weather-panel/contents/ui/main.qml:19
+msgid "Refresh"
+msgstr ""
+
+#: packages/weather-panel/contents/ui/main.qml:198
+msgctxt "high and low temperature of the day"
+msgid "H:%1°  L:%2°"
+msgstr ""
+
+#: packages/weather-panel/contents/config/config.qml:11
+msgid "More & Support"
+msgstr ""

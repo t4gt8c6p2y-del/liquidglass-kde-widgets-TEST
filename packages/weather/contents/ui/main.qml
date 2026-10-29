@@ -279,7 +279,7 @@ PlasmoidItem {
 
                     Text {
                         anchors.right: parent.right
-                        text: "H:" + weatherData.highTemp + "°  L:" + weatherData.lowTemp + "°"
+                        text: i18nc("high and low temperature of the day", "H:%1°  L:%2°", weatherData.highTemp, weatherData.lowTemp)
                         color: colors.weatherForeground
                         opacity: 0.70
                         font.family: sfRegular.name
@@ -405,7 +405,7 @@ PlasmoidItem {
 
                     Text {
                         anchors.right: parent.right
-                        text: "H:" + weatherData.highTemp + "°  L:" + weatherData.lowTemp + "°"
+                        text: i18nc("high and low temperature of the day", "H:%1°  L:%2°", weatherData.highTemp, weatherData.lowTemp)
                         color: colors.weatherForeground
                         opacity: 0.70
                         font.family: sfRegular.name
