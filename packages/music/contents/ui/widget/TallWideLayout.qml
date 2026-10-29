@@ -41,7 +41,7 @@ Item {
 
     readonly property real _m: Math.round(width * 0.08)
     readonly property real _s: width
-    readonly property real _btnH: Math.round(_s * 0.075)
+    readonly property real _btnH: Math.round(_s * 0.09)
 
     property bool _lyricsAnimating: false
     onLyricsActiveChanged: {
@@ -75,8 +75,8 @@ Item {
             FlipAlbumArt {
                 id: albumArtItem
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.round(parent.width * 0.9)
                 height: width
                 artUrl: layout.albumArt
                 radius: Math.round(width * 0.08)
@@ -207,7 +207,7 @@ Item {
             Image {
                 anchors.centerIn: parent
                 source: Qt.resolvedUrl("../icons/lyrics.svg")
-                width: Math.round(layout._s * 0.0528)
+                width: Math.round(layout._s * 0.068)
                 height: width
                 smooth: true
             }

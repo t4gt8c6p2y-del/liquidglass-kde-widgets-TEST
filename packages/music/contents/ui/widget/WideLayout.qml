@@ -82,9 +82,9 @@ Item {
 
                 FlipAlbumArt {
                     id: albumArtItem
-                    anchors.top: parent.top
                     anchors.left: parent.left
-                    anchors.bottom: parent.bottom
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: Math.round(parent.height * 0.88)
                     width: height
                     artUrl: layout.albumArt
                     radius: Math.round(height * 0.08)
@@ -236,7 +236,7 @@ Item {
         anchors.topMargin: layout._m
         anchors.rightMargin: layout._m
         width: height
-        height: Math.round(layout._s * 0.09)
+        height: Math.round(layout._s * 0.11)
         radius: height / 2
         color: layout.lyricsActive ? layout.lyricsAccentColor : Qt.rgba(1, 1, 1, 0.30)
         Behavior on color { ColorAnimation { duration: 280 } }
@@ -244,7 +244,7 @@ Item {
         Image {
             anchors.centerIn: parent
             source: Qt.resolvedUrl("../icons/lyrics.svg")
-            width: Math.round(layout._s * 0.0726)
+            width: Math.round(layout._s * 0.0935)
             height: width
             smooth: true
         }

@@ -14,6 +14,8 @@ Item {
     property real fontSize: 10
     property bool showTimeLabels: true
     property var formatTime: function(us) { return "" }
+    // Tap the right-hand time to switch between total duration and time left.
+    property bool showRemaining: false
 
     signal seek(real positionUs)
 
@@ -97,11 +99,20 @@ Item {
         Text {
             id: totalLabel
             anchors.right: parent.right
-            text: slider.formatTime(slider.length)
+            text: slider.showRemaining
+                  ? "-" + slider.formatTime(Math.max(0, slider.length - slider.position))
+                  : slider.formatTime(slider.length)
             color: slider.timeLabelColor
             opacity: slider.timeLabelOpacity
             font.family: slider.fontFamily
             font.pixelSize: slider.fontSize
+
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -6
+                cursorShape: Qt.PointingHandCursor
+                onClicked: slider.showRemaining = !slider.showRemaining
+            }
         }
     }
 }

@@ -552,12 +552,29 @@ PlasmoidItem {
         _lyricsRetryTimer.restart()
     }
 
-    function _lrclibGet(url, key, cb) {
+    function _later(ms, fn) {
+        var t = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+        t.interval = ms
+        t.triggered.connect(function() { t.destroy(); fn() })
+        t.start()
+    }
+
+    // LRCLIB sometimes answers with a server error or times out for a moment,
+    // so network failures / 5xx / 429 are retried twice before giving up.
+    function _lrclibGet(url, key, cb, attempt) {
+        attempt = attempt || 0
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE) return
             if (root._lyricsTrackKey !== key) return  // stale
-            cb(xhr.status, xhr.responseText)
+            var st = xhr.status
+            if ((st === 0 || st === 429 || st >= 500) && attempt < 2) {
+                root._later(900 * (attempt + 1), function() {
+                    if (root._lyricsTrackKey === key) root._lrclibGet(url, key, cb, attempt + 1)
+                })
+                return
+            }
+            cb(st, xhr.responseText)
         }
         xhr.open("GET", url)
         xhr.send()
@@ -605,6 +622,23 @@ PlasmoidItem {
             + "?track_name=" + encodeURIComponent(root._cleanTitle(track))
             + "&artist_name=" + encodeURIComponent(root._firstArtist(artist))
 
+        // /get returns a single best match, which can be a version that only has
+        // plain text. Another entry of the same track may have timestamps, so in
+        // that case look for one before settling for the static text.
+        function applyOrUpgrade(resp) {
+            if (resp.syncedLyrics) { root._applyLyrics(resp); return }
+            root._lrclibGet(search, key, function(status, text) {
+                var better = null
+                if (status === 200) {
+                    try {
+                        var pk = root._pickLyricsResult(JSON.parse(text), durSec)
+                        if (pk && pk.syncedLyrics) better = pk
+                    } catch (e) { better = null }
+                }
+                root._applyLyrics(better || resp)
+            })
+        }
+
         function trySearch() {
             root._lrclibGet(search, key, function(status, text) {
                 if (status === 200) {
@@ -627,7 +661,7 @@ PlasmoidItem {
             if (loose === exact) { trySearch(); return }
             root._lrclibGet(loose, key, function(status, text) {
                 if (status === 200) {
-                    try { root._applyLyrics(JSON.parse(text)) }
+                    try { applyOrUpgrade(JSON.parse(text)) }
                     catch (e) { root._lyricsFailed() }
                 } else if (status === 404) {
                     trySearch()
@@ -639,7 +673,7 @@ PlasmoidItem {
 
         root._lrclibGet(exact, key, function(status, text) {
             if (status === 200) {
-                try { root._applyLyrics(JSON.parse(text)) }
+                try { applyOrUpgrade(JSON.parse(text)) }
                 catch (e) { root._lyricsFailed() }
             } else if (status === 404) {
                 tryLoose()
