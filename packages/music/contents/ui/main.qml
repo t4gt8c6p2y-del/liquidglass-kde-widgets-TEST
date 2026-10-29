@@ -499,6 +499,36 @@ PlasmoidItem {
             _lyricsFetchTimer.restart()
     }
 
+    // Lyrics mode follows what the user last chose, track after track:
+    //  - _lyricsWanted: the user's last choice (lyrics view on = true, cover = false).
+    //  - _lyricsManual: the user opened the lyrics view by hand on THIS track, so
+    //    it stays open even if this track has no lyrics (reset on track change).
+    // While wanted, a track without lyrics falls back to the cover, and the next
+    // track that has lyrics brings the lyrics view back. If the user chose the
+    // cover, it stays on the cover whatever the next track has.
+    property bool _lyricsWanted: false
+    property bool _lyricsManual: false
+
+    function _userToggleLyrics() {
+        lyricsActive = !lyricsActive
+        _lyricsWanted = lyricsActive
+        _lyricsManual = lyricsActive
+    }
+
+    function _syncLyricsMode() {
+        if (!_lyricsWanted) return
+        var hasLyrics = _lyricsState === 2 && (_syncedLyrics.length > 0 || _plainLyrics !== "")
+        var noLyrics = _lyricsState === 4 || (_lyricsState === 2 && !hasLyrics)
+        if (hasLyrics) {
+            if (!lyricsActive) lyricsActive = true
+        } else if (noLyrics && !_lyricsManual) {
+            if (lyricsActive) lyricsActive = false
+        }
+        // loading / error: keep the current view while it loads or retries
+    }
+
+    on_LyricsStateChanged: _syncLyricsMode()
+
     Timer {
         id: _lyricsFetchTimer
         interval: 400
@@ -750,6 +780,7 @@ PlasmoidItem {
         root._lastSampledUrl = ""
         _scheduleArtRefresh()
         _resampleTimer.restart()
+        root._lyricsManual = false
         root._syncedLyrics = []
         root._plainLyrics = ""
         root._lyricsState = 0
@@ -1115,7 +1146,7 @@ PlasmoidItem {
                 lyricsAccentColor: root._hasSampledColor ? root._sampledTint : Qt.rgba(1, 1, 1, 0.35)
                 flipDirection: root._flipDirection
                 lyricsActive: root.lyricsActive
-                onToggleLyrics: root.lyricsActive = !root.lyricsActive
+                onToggleLyrics: root._userToggleLyrics()
                 syncedLyrics: root._syncedLyrics
                 plainLyrics: root._plainLyrics
                 lyricsState: root._lyricsState
@@ -1156,7 +1187,7 @@ PlasmoidItem {
                 lyricsAccentColor: root._hasSampledColor ? root._sampledTint : Qt.rgba(1, 1, 1, 0.35)
                 flipDirection: root._flipDirection
                 lyricsActive: root.lyricsActive
-                onToggleLyrics: root.lyricsActive = !root.lyricsActive
+                onToggleLyrics: root._userToggleLyrics()
                 syncedLyrics: root._syncedLyrics
                 plainLyrics: root._plainLyrics
                 lyricsState: root._lyricsState
