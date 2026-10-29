@@ -114,6 +114,7 @@ PlasmoidItem {
         property bool canGoPrevious: true
         property bool canPlay: true
         property bool canPause: true
+        property bool canSeek: false
 
         // Same names as the MPRIS methods, but lower-case (QML rejects
         // upper-case method names); root._playerCall() maps one to the other.
@@ -170,8 +171,10 @@ PlasmoidItem {
         // Refresh quickly so the play/pause state follows the command.
         _kcRefreshTimer.restart()
     }
+    property real _kcSeekHold: 0
     function _kcSeek(ms) {
         if (kcPlayer.deviceId === "") return
+        _kcSeekHold = Date.now() + 3000
         kcRunner.connectSource(_kcCmd("seek " + kcPlayer.deviceId + " " + ms + " " + Date.now()))
     }
 
@@ -215,7 +218,8 @@ PlasmoidItem {
                     artist: pv("artist") || "", album: pv("album") || "",
                     playing: pv("isPlaying") === true,
                     posMs: pv("position") || 0, lenMs: pv("length") || 0,
-                    art: pv("localAlbumArtUrl") || ""
+                    art: pv("localAlbumArtUrl") || "",
+                    canSeek: pv("canSeek") === true
                 }
                 if (!chosen || (cand.playing && !chosen.playing)) chosen = cand
             } catch (e) {
@@ -246,9 +250,11 @@ PlasmoidItem {
         kcPlayer.length = chosen.lenMs * 1000
         // The phone's position is only refreshed now and then; keep our own
         // running clock unless the phone's value really differs (seek, new track).
+        // (not right after a seek: the phone may still report the old position)
         if (trackChanged || status !== kcPlayer.playbackStatus
-                || Math.abs(posUs - root.position) > 2500000)
+                || (Date.now() > root._kcSeekHold && Math.abs(posUs - root.position) > 2500000))
             kcPlayer.position = posUs
+        kcPlayer.canSeek = chosen.canSeek
         kcPlayer.album = chosen.album
         kcPlayer.artUrl = art
         kcPlayer.playbackStatus = status
@@ -820,9 +826,20 @@ PlasmoidItem {
         root._flipDirection = 1
         root._playerCall("Previous")
     }
+    // Seeking really reaches the player only for desktop players and for a phone
+    // controlled through KDE Connect. A phone over Bluetooth cannot be seeked
+    // (BlueZ's MPRIS proxy has no Seek), so the bar and the lyrics are then
+    // read-only instead of changing only the time shown here.
+    readonly property bool _canSeek: {
+        var p = root._activePlayer
+        if (!p || !(root.length > 0)) return false
+        if (p === kcPlayer) return kcPlayer.canSeek
+        return !root._lengthInMs && !!p.desktopEntry && (p.canSeek ?? false)
+    }
+
     function seek(positionUs) {
         if (!root._activePlayer) return
-        if (root._lengthInMs) return   // Bluetooth (AVRCP) players cannot seek
+        if (!root._canSeek) return
         var currentPos = root._activePlayer.position ?? root.position
         var offset = positionUs - currentPos
         root._playerCall("Seek", offset)
@@ -1125,6 +1142,7 @@ PlasmoidItem {
                 onPreviousTrack: root.previous()
                 onSeek: function(pos) { root.seek(pos) }
                 onRetryLyrics: root._fetchLyrics()
+                canSeek: root._canSeek
                 formatTime: root.formatTime
             }
         }
@@ -1165,6 +1183,7 @@ PlasmoidItem {
                 onPreviousTrack: root.previous()
                 onSeek: function(pos) { root.seek(pos) }
                 onRetryLyrics: root._fetchLyrics()
+                canSeek: root._canSeek
                 formatTime: root.formatTime
             }
         }

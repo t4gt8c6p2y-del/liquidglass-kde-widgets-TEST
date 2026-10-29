@@ -16,6 +16,8 @@ Item {
     property var formatTime: function(us) { return "" }
     // Tap the right-hand time to switch between total duration and time left.
     property bool showRemaining: false
+    // false = read-only (the player cannot be seeked)
+    property bool seekEnabled: true
 
     signal seek(real positionUs)
 
@@ -62,6 +64,7 @@ Item {
         MouseArea {
             id: barMouse
             anchors.fill: parent
+            enabled: slider.seekEnabled
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
 

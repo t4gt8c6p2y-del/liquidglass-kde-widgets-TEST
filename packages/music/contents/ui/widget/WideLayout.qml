@@ -20,6 +20,7 @@ Item {
     property color accentColor: "#ffffff"
     property color lyricsAccentColor: Qt.rgba(1, 1, 1, 0.35)
     property bool lyricsActive: false
+    property bool canSeek: true
     property int flipDirection: 1
     property var formatTime: function(us) { return "" }
     property var syncedLyrics: []
@@ -69,6 +70,7 @@ Item {
                 fontFamily: layout.fontFamily
                 fontSize: Math.max(9, Math.round(layout._s * 0.046))
                 formatTime: layout.formatTime
+                seekEnabled: layout.canSeek
                 onSeek: function(pos) { layout.seek(pos) }
             }
 
@@ -223,6 +225,7 @@ Item {
             blurEnabled: layout.lyricsBlur
             activeOpacity: layout.lyricsActiveOpacity
             inactiveOpacity: layout.lyricsInactiveOpacity
+            seekEnabled: layout.canSeek
             onSeekTo: function(posUs) { layout.seek(posUs) }
             onRetryLyrics: layout.retryLyrics()
         }

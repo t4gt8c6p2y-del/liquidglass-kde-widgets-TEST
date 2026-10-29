@@ -17,6 +17,8 @@ Item {
     property real inactiveOpacity: 0.40
     readonly property real activeScale: 1.05
 
+    // false = clicking a line does nothing (the player cannot be seeked)
+    property bool seekEnabled: true
     signal seekTo(real positionUs)
     signal retryLyrics()
 
@@ -186,6 +188,7 @@ Item {
             MouseArea {
                 id: hoverArea
                 anchors.fill: parent
+                enabled: lv.seekEnabled
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
