@@ -46,10 +46,17 @@ PlasmoidItem {
     // peripherals / phones that report one, and the power profile.
     property var info: Devices.parse("")
 
-    // `sh <file>` so the script needs no executable bit.
+    // `bash <file>` so the script needs no executable bit.
     readonly property string _scriptPath:
         decodeURIComponent(Qt.resolvedUrl("scripts/devices.sh").toString().replace(/^file:\/\//, ""))
-    readonly property string _command: "sh '" + _scriptPath.replace(/'/g, "'\\''") + "'"
+    readonly property string _command: "bash '" + _scriptPath.replace(/'/g, "'\\''") + "'"
+
+    // No polling: the script is started once to read the levels, then again in
+    // "--wait" mode, where it sleeps until D-Bus reports a real change of a
+    // battery level / charging state (UPower, BlueZ, KDE Connect). When it
+    // wakes up it prints fresh values, and the widget starts waiting again.
+    property bool _watching: false
+    property real _watchStart: 0
 
     P5Support.DataSource {
         id: runner
@@ -58,26 +65,42 @@ PlasmoidItem {
         onNewData: (source, data) => {
             disconnectSource(source)
             root._apply(data["stdout"])
+            if (source.indexOf("--wait") >= 0) {
+                root._watching = false
+                // A wait that ends at once means something is wrong: back off.
+                if (Date.now() - root._watchStart < 1500)
+                    rewatchTimer.restart()
+                else
+                    root._watch()
+            }
         }
         function run() { connectSource(root._command) }
+        function watch() { connectSource(root._command + " --wait") }
     }
+
+    function _watch() {
+        if (_watching || !root.visible) return
+        _watching = true
+        _watchStart = Date.now()
+        runner.watch()
+    }
+
+    Timer {
+        id: rewatchTimer
+        interval: 60000
+        onTriggered: root._watch()
+    }
+
+    // Initial read, and a fresh read when the widget becomes visible again.
+    Component.onCompleted: { runner.run(); root._watch() }
+    onVisibleChanged: if (visible) { runner.run(); root._watch() }
 
     function _apply(text) {
         const next = Devices.parse(text)
         // Only touch `info` when something really changed so the rings don't
-        // re-evaluate (and re-animate) on every poll.
+        // re-evaluate (and re-animate) for nothing.
         if (JSON.stringify(next) !== JSON.stringify(root.info))
             root.info = next
-    }
-
-    // Battery levels move slowly; a light poll is plenty (one short script
-    // every 30 s, and nothing while the widget is hidden).
-    Timer {
-        interval: 30000
-        repeat: true
-        running: root.visible
-        triggeredOnStart: true
-        onTriggered: runner.run()
     }
 
     // ── View ──────────────────────────────────────────────────────────────

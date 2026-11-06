@@ -38,6 +38,8 @@ PlasmoidItem {
         configLatitude: plasmoid.configuration.latitude
         configLongitude: plasmoid.configuration.longitude
         temperatureUnit: plasmoid.configuration.temperatureUnit
+        useCurrentLocation: plasmoid.configuration.useCurrentLocation
+        refreshIntervalMin: plasmoid.configuration.refreshIntervalMin
     }
 
     fullRepresentation: Item {

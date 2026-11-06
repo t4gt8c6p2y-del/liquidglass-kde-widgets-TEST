@@ -48,7 +48,16 @@ PlasmoidItem {
         onTriggered: plasmoid.configuration.phoneSource = root._kcPreferred ? 0 : 1
     }
 
-    Plasmoid.contextualActions: [playPauseAction, nextAction, previousAction, phoneSourceAction].concat(commonActions.list)
+    // Re-reads everything the widget shows: the player list, the phone (KDE
+    // Connect), the cover and the lyrics.
+    PlasmaCore.Action {
+        id: refreshAction
+        text: i18n("Refresh")
+        icon.name: "view-refresh"
+        onTriggered: root.refreshAll()
+    }
+
+    Plasmoid.contextualActions: [playPauseAction, nextAction, previousAction, phoneSourceAction, refreshAction].concat(commonActions.list)
     preferredRepresentation: fullRepresentation
 
     readonly property bool _shouldShow: {
@@ -789,6 +798,31 @@ PlasmoidItem {
         _lyricsRetryTimer.stop()
         _lyricsFetchTimer.restart()
     }
+    // Manual refresh (context menu). Same resets as a track change, but the
+    // playback position is left alone.
+    function refreshAll() {
+        // Re-pick the player (the model list is not reactive on its own).
+        root._modelRev++
+        // Phone over KDE Connect: ask for fresh data right away.
+        if (root._kcPreferred) root._kcPoll()
+        // Cover: forget cached online lookups and look the cover up again.
+        root._onlineArtCache = ({})
+        root._onlineArt = ""
+        _onlineArtTimer.restart()
+        if (root._rawAlbumArt !== "") _artDebounceTimer.restart()
+        root._lastSampledUrl = ""
+        _scheduleArtRefresh()
+        _resampleTimer.restart()
+        // Lyrics: drop the current ones and fetch them again.
+        root._syncedLyrics = []
+        root._plainLyrics = ""
+        root._lyricsState = 0
+        root._lyricsTrackKey = ""
+        root._lyricsFailCount = 0
+        _lyricsRetryTimer.stop()
+        if (root.track !== "") _lyricsFetchTimer.restart()
+    }
+
     Timer {
         id: _resampleTimer
         interval: 350

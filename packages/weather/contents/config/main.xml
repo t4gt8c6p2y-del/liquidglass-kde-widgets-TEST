@@ -57,5 +57,13 @@
         <entry name="temperatureUnit" type="Int">
             <default>0</default>
         </entry>
+        <!-- Follow the device location instead of the typed city. -->
+        <entry name="useCurrentLocation" type="Bool">
+            <default>false</default>
+        </entry>
+        <!-- Minutes between two weather (and location) updates. -->
+        <entry name="refreshIntervalMin" type="Int">
+            <default>30</default>
+        </entry>
     </group>
 </kcfg>
