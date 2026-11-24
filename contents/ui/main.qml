@@ -1,0 +1,6396 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Controls as QQC2
+import QtQuick.Layouts
+import QtCore
+import org.kde.kirigami as Kirigami
+import org.kde.layershell as LayerShell
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
+import org.kde.plasma.private.sessions as Sessions
+import org.kde.taskmanager as TaskManager
+import org.kde.private.desktopcontainment.folder as Folder
+import "effects" as DockEffects
+import "AppGroupStore.js" as AppGroupStore
+
+PlasmoidItem {
+    id: root
+
+    Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.userBackgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.constraintHints: Plasmoid.NoHint
+
+    preferredRepresentation: fullRepresentation
+    activationTogglesExpanded: false
+    switchWidth: 1
+    switchHeight: 1
+
+    readonly property real maxScale: boundedNumber(
+        Plasmoid.configuration.maxScale, 1.45, 1.0, 2.0)
+    readonly property real zoomRadius: boundedNumber(
+        Plasmoid.configuration.zoomRadius, 70, 30, 200)
+    readonly property real configuredIconSize: boundedNumber(
+        Plasmoid.configuration.iconSize, 44, 24, 96)
+    readonly property int configuredDockPosition: Math.round(boundedNumber(
+        Plasmoid.configuration.dockPosition, 0, 0, 2))
+    readonly property int configuredDockLocation:
+        configuredDockPosition === 1 ? PlasmaCore.Types.LeftEdge
+        : configuredDockPosition === 2 ? PlasmaCore.Types.RightEdge
+        : PlasmaCore.Types.BottomEdge
+    readonly property int dockLocation: Plasmoid.formFactor
+        === PlasmaCore.Types.Planar
+        ? configuredDockLocation : Plasmoid.location
+    // Côté vers lequel s'ouvrent les menus contextuels depuis le point du clic.
+    readonly property string menuPopupDirection:
+        dockLocation === PlasmaCore.Types.TopEdge ? "down"
+        : dockLocation === PlasmaCore.Types.LeftEdge ? "right"
+        : dockLocation === PlasmaCore.Types.RightEdge ? "left" : "up"
+    readonly property bool isVertical:
+        dockLocation === PlasmaCore.Types.LeftEdge
+        || dockLocation === PlasmaCore.Types.RightEdge
+    // Espace entre les icônes (réglage « Espacement des icônes »). Il reste
+    // toujours celui des réglages, et n'est réduit que si le Dock, AU REPOS,
+    // est sur le point de toucher les bords de l'écran. L'agrandissement au
+    // survol, lui, s'adapte à la place restante (voir effectiveMaxScale).
+    readonly property real configuredItemSpacing: boundedNumber(
+        Plasmoid.configuration.iconSpacing, 4, 0, 32)
+    readonly property real itemSpacing:
+        fittedItemSpacing(configuredItemSpacing)
+    readonly property real windowPadding: 10
+    // Marge transparente (en px) laissée entre le fond du dock et le bord de
+    // ses fenêtres. Un fond qui touche exactement le bord d'une fenêtre fait
+    // apparaître, sur les parties droites, un filet d'un pixel dont la couleur
+    // dépend du fond d'écran. Les icônes ne bougent pas : seul le fond
+    // dessiné rétrécit de cette valeur de chaque côté.
+    readonly property real surfaceInset: 2
+    readonly property real mainMargin: boundedNumber(
+        Plasmoid.configuration.dockMargin, 16, 4, 40)
+    readonly property real crossMargin: boundedNumber(
+        Plasmoid.configuration.dockCrossMargin, 5, 0, 20)
+    readonly property real panelEdgeMargin: boundedNumber(
+        Plasmoid.configuration.screenEdgeMargin, 8, 0, 32)
+    readonly property real backgroundOpacity: boundedNumber(
+        Plasmoid.configuration.backgroundOpacity, 0.55, 0.15, 1.0)
+    readonly property bool useThemeBackground:
+        Plasmoid.configuration.useThemeBackground === undefined
+            ? true : Boolean(Plasmoid.configuration.useThemeBackground)
+    readonly property color customBackgroundColor:
+        Plasmoid.configuration.customBackgroundColor || "#20242b"
+    readonly property real cornerRadius: boundedNumber(
+        Plasmoid.configuration.cornerRadius, 12, 0, 48)
+    readonly property real borderOpacity: boundedNumber(
+        Plasmoid.configuration.borderOpacity, 0.22, 0, 0.5)
+    readonly property real borderStrength: {
+        var stored = Number(Plasmoid.configuration.borderStrength);
+        if (Number.isFinite(stored) && stored >= 0) {
+            return Math.min(1.0, stored);
+        }
+        return Math.min(1.0, borderOpacity / 0.5);
+    }
+    // Intensité de la lumière de la bordure (0..2). Tant que le curseur n'a
+    // jamais été réglé, on reprend l'ancienne case « suit la souris ».
+    readonly property real borderLightIntensity: {
+        var stored = Number(Plasmoid.configuration.borderLightIntensity);
+        if (Number.isFinite(stored) && stored >= 0) {
+            return Math.min(2.0, stored);
+        }
+        return Plasmoid.configuration.borderFollowMouse === undefined
+            || Boolean(Plasmoid.configuration.borderFollowMouse) ? 1.0 : 0.0;
+    }
+    // Largeur de la bordure du Dock (pixels).
+    readonly property real borderWidth: boundedNumber(
+        Plasmoid.configuration.borderWidth, 1.0, 0.5, 4)
+
+    // --- Flou et Liquid Glass ------------------------------------------------
+    // Le Dock dessine lui-même son fond en verre (voir DockBackground et
+    // GlassPane) : ce qui se trouve derrière lui, flouté, et pour le Liquid
+    // Glass déformé sur les bords comme par une lentille. KWin n'est pas utilisé
+    // et ses réglages ne sont jamais modifiés. Le fond d'écran est lu dans son
+    // fichier ; les fenêtres qui passent derrière le Dock sont capturées en
+    // direct (flux PipeWire, comme les aperçus des icônes), donc le verre suit
+    // une fenêtre que l'on déplace. Voir updateBackdropWindows().
+    readonly property bool liquidGlass:
+        Boolean(Plasmoid.configuration.glassManage)
+    // Faux : le verre n'affiche que le fond d'écran (aucune capture).
+    readonly property bool liveBackdrop:
+        Plasmoid.configuration.liveBackdrop === undefined
+            ? true : Boolean(Plasmoid.configuration.liveBackdrop)
+    readonly property bool glassEnabled:
+        wallpaperBlur > 0.001 || liquidGlass
+    // Verre du Spotlight : ses propres réglages (onglet « Spotlight »), sans
+    // lien avec le verre du Dock ni avec l'effet KWin de l'application externe.
+    readonly property bool spotlightLiveBackdrop:
+        Plasmoid.configuration.spotlightLiveBackdrop === undefined
+            ? true : Boolean(Plasmoid.configuration.spotlightLiveBackdrop)
+    readonly property real spotlightGlassTint: boundedNumber(
+        Plasmoid.configuration.spotlightGlassTint, 0.3, 0, 1)
+    readonly property real spotlightGlassDarken: boundedNumber(
+        Plasmoid.configuration.spotlightGlassDarken, 0, 0, 1)
+    readonly property real spotlightBorderStrength: boundedNumber(
+        Plasmoid.configuration.spotlightBorderStrength, 0.8, 0, 1)
+    readonly property real spotlightBorderWidth: boundedNumber(
+        Plasmoid.configuration.spotlightBorderWidth, 1.5, 0.5, 4)
+    // Liquid Glass du menu d'applications.
+    readonly property real spotlightMenuBlur: boundedNumber(
+        Plasmoid.configuration.spotlightMenuBlur, 10, 0, 64)
+    readonly property real spotlightMenuThickness: boundedNumber(
+        Plasmoid.configuration.spotlightMenuThickness, 35, 1, 80)
+    readonly property real spotlightMenuRefraction: boundedNumber(
+        Plasmoid.configuration.spotlightMenuRefraction, 65, 0, 300)
+    readonly property real spotlightMenuIor: boundedNumber(
+        Plasmoid.configuration.spotlightMenuIor, 1.7, 1, 4)
+    readonly property real spotlightMenuChroma: boundedNumber(
+        Plasmoid.configuration.spotlightMenuChroma, 0.3, 0, 1)
+    readonly property real spotlightMenuSpec: boundedNumber(
+        Plasmoid.configuration.spotlightMenuSpec, 0.7, 0, 1)
+    // Curseur de flou 2 % .. 100 % -> rayon de 1 à 60 pixels.
+    readonly property real glassBlurRadius: wallpaperBlur * 60
+    readonly property real glassThickness: boundedNumber(
+        Plasmoid.configuration.glassThickness, 16, 4, 60)
+    readonly property real glassStrength: boundedNumber(
+        Plasmoid.configuration.glassStrength, 1.0, 0, 2)
+    readonly property real glassDispersion: boundedNumber(
+        Plasmoid.configuration.glassDispersion, 0.25, 0, 1)
+    readonly property real glassProfile: boundedNumber(
+        Plasmoid.configuration.glassProfile, 1.0, 0.5, 3)
+    // « Reflet des bords » du Liquid Glass du Dock : voile blanc lumineux le
+    // long des bords. Il n'a plus de réglage et est toujours éteint (la clé
+    // glassRimStrength de la configuration est ignorée, y compris après une
+    // réinstallation qui la remet à sa valeur par défaut).
+    readonly property real glassRim: 0
+    readonly property bool borderColorFromWallpaper:
+        Plasmoid.configuration.borderColorFromWallpaper === undefined
+            ? true : Boolean(Plasmoid.configuration.borderColorFromWallpaper)
+
+    // Voyant de l'application active : couleur du thème ou couleur choisie.
+    readonly property bool useThemeIndicatorColor:
+        Plasmoid.configuration.useThemeIndicatorColor === undefined
+            ? true : Boolean(Plasmoid.configuration.useThemeIndicatorColor)
+    readonly property color customIndicatorColor:
+        Plasmoid.configuration.indicatorColor || "#3daee9"
+    readonly property real wallpaperBlur: boundedNumber(
+        Plasmoid.configuration.wallpaperBlur, 0, 0, 1)
+    readonly property real shadowOpacity: boundedNumber(
+        Plasmoid.configuration.shadowOpacity, 0.42, 0, 0.7)
+    // Reflet vitré et flou : un curseur (0..1 / 0..2) remplace les anciennes
+    // cases. Tant que le curseur n'a jamais été réglé (valeur < 0), on reprend
+    // l'ancienne case pour que le rendu existant ne change pas.
+    readonly property real highlightStrength: {
+        var stored = Number(Plasmoid.configuration.highlightStrength);
+        if (Number.isFinite(stored) && stored >= 0) {
+            return Math.min(2.0, stored);
+        }
+        return Plasmoid.configuration.showHighlight === undefined
+            || Boolean(Plasmoid.configuration.showHighlight) ? 1.0 : 0.0;
+    }
+    readonly property bool showHighlight: highlightStrength > 0.001
+    // Chaque bureau virtuel a son propre dock : les fenêtres des autres
+    // bureaux n'y apparaissent pas (ni voyant « ouvert », ni redirection).
+    readonly property bool perDesktopDock:
+        Plasmoid.configuration.perDesktopDock === undefined
+            ? true : Boolean(Plasmoid.configuration.perDesktopDock)
+    readonly property bool hideOnMaximized:
+        Plasmoid.configuration.hideOnMaximized === undefined
+            ? true : Boolean(Plasmoid.configuration.hideOnMaximized)
+    readonly property int launchAnimation: Math.round(boundedNumber(
+        Plasmoid.configuration.launchAnimation, 1, 0, 1))
+    // Die Vergroesserung folgt dem Zeiger ueber die Feder in DockItem.qml:
+    // magnificationSpring ist deren Eigenfrequenz in rad/s, die Beruhigungs-
+    // zeit betraegt rund 6.6 / omega Sekunden (20 -> 330 ms, 50 -> 130 ms,
+    // 60 -> 110 ms). magnificationDamping ist der Daempfungsgrad, 1.0 ist der
+    // aperiodische Grenzfall ohne Nachwippen.
+    readonly property real magnificationSpring: boundedNumber(
+        Plasmoid.configuration.magnificationSpring, 50.0, 20.0, 60.0)
+    readonly property real magnificationDamping: boundedNumber(
+        Plasmoid.configuration.magnificationDamping, 1.0, 0.2, 1.0)
+    readonly property real clickBounceHeight: boundedNumber(
+        Plasmoid.configuration.clickBounceHeight, 4, 0, 16)
+    readonly property real launchBounceHeight: boundedNumber(
+        Plasmoid.configuration.launchBounceHeight, 8, 0, 24)
+    readonly property int dockRevealDuration: Math.round(boundedNumber(
+        Plasmoid.configuration.dockRevealDuration, 140, 60, 400))
+    readonly property int dockHideDuration: Math.round(boundedNumber(
+        Plasmoid.configuration.dockHideDuration, 160, 60, 400))
+    // Durée pendant laquelle le pointeur doit rester au bord de l'écran pour que
+    // le Dock caché (fenêtre agrandie) s'affiche.
+    readonly property int maximizedRevealDelay: Math.round(boundedNumber(
+        Plasmoid.configuration.maximizedRevealDelay, 0, 0, 2000))
+    readonly property int appGroupPopupDuration: Math.round(boundedNumber(
+        Plasmoid.configuration.appGroupPopupDuration, 180, 60, 400))
+    readonly property real appGroupPopupOvershoot: boundedNumber(
+        Plasmoid.configuration.appGroupPopupOvershoot, 1.35, 0, 3)
+    readonly property real folderHoverScale: boundedNumber(
+        Plasmoid.configuration.folderHoverScale, 1.06, 1.0, 1.2)
+    readonly property bool showFolderView:
+        Plasmoid.configuration.showFolderView === undefined
+            ? true : Boolean(Plasmoid.configuration.showFolderView)
+    readonly property bool autoOpenFolderWithOpenDocument:
+        Plasmoid.configuration.autoOpenFolderWithOpenDocument === undefined
+            ? true
+            : Boolean(Plasmoid.configuration.autoOpenFolderWithOpenDocument)
+    readonly property bool autoOpenAppGroupWithRunningApp:
+        Plasmoid.configuration.autoOpenAppGroupWithRunningApp === undefined
+            ? true
+            : Boolean(Plasmoid.configuration.autoOpenAppGroupWithRunningApp)
+    readonly property int appGroupViewMode: Math.round(boundedNumber(
+        Plasmoid.configuration.appGroupViewMode, 1, 0, 1))
+    readonly property bool showTrash:
+        Plasmoid.configuration.showTrash === undefined
+            ? true : Boolean(Plasmoid.configuration.showTrash)
+    readonly property bool showRemovableVolumes:
+        Plasmoid.configuration.showRemovableVolumes === undefined
+            ? true : Boolean(Plasmoid.configuration.showRemovableVolumes)
+    readonly property bool openRemovableVolumesInNewTab:
+        Plasmoid.configuration.openRemovableVolumesInNewTab === undefined
+            ? false : Boolean(Plasmoid.configuration.openRemovableVolumesInNewTab)
+    property bool isVolumeDragOverTrash: false
+
+    readonly property int removableVolumeCount: showRemovableVolumes
+        ? removableVolumesModel.count : 0
+
+    readonly property bool showPowerButton:
+        Plasmoid.configuration.showPowerButton === undefined
+            ? true : Boolean(Plasmoid.configuration.showPowerButton)
+    readonly property int powerButtonPosition: Math.round(boundedNumber(
+        Plasmoid.configuration.powerButtonPosition, 1, 0, 1))
+    // Spotlight et Siri IA : deux lanceurs épinglés comme les autres
+    // applications du Dock (on les déplace où l'on veut). Voir
+    // syncToolLaunchers().
+    readonly property bool showSpotlightButton:
+        Plasmoid.configuration.showSpotlightButton === undefined
+            ? true : Boolean(Plasmoid.configuration.showSpotlightButton)
+    readonly property bool showSiriButton:
+        Plasmoid.configuration.showSiriButton === undefined
+            ? true : Boolean(Plasmoid.configuration.showSiriButton)
+    readonly property bool spotlightReplaceLauncher:
+        Plasmoid.configuration.spotlightReplaceLauncher === undefined
+            ? true : Boolean(Plasmoid.configuration.spotlightReplaceLauncher)
+    readonly property bool showDesktopSwitcher:
+        Plasmoid.configuration.showDesktopSwitcher === undefined
+            ? true : Boolean(Plasmoid.configuration.showDesktopSwitcher)
+    readonly property int desktopSwitcherPosition: Math.round(boundedNumber(
+        Plasmoid.configuration.desktopSwitcherPosition, 0, 0, 1))
+    readonly property int desktopSwitcherLabelMode: Math.round(boundedNumber(
+        Plasmoid.configuration.desktopSwitcherLabelMode, 0, 0, 1))
+    readonly property url defaultFolderUrl: StandardPaths.writableLocation(
+        StandardPaths.DownloadLocation)
+    readonly property url configuredFolderUrl:
+        String(Plasmoid.configuration.folderUrl || "").length > 0
+            ? Plasmoid.configuration.folderUrl : defaultFolderUrl
+    // Image choisie pour l'icône du dossier Téléchargements (vide : icône du thème).
+    readonly property string customFolderIcon:
+        String(Plasmoid.configuration.folderIconImage || "")
+    readonly property var additionalFolderUrls:
+        Plasmoid.configuration.folderUrls || []
+    readonly property real indicatorSize: 3
+    readonly property real indicatorGap: 2
+    readonly property real indicatorSpace: indicatorSize + indicatorGap
+    readonly property real baseIconSize: configuredIconSize
+    readonly property real baseSurfaceCrossLength:
+        baseIconSize + indicatorSpace + 2 * crossMargin
+    readonly property real baseSurfaceMainLength: preferredMainLength
+    readonly property real maximumIconSize: baseIconSize * maxScale
+    readonly property int taskCount: tasksModel.count
+    property int taskLayoutRevision: 0
+    readonly property var appGroups:
+        parseAppGroups(Plasmoid.configuration.appGroups || [])
+    readonly property var taskLayout: {
+        // QAbstractItemModel role changes are not directly observable from a
+        // JavaScript helper. This revision makes the layout binding explicit.
+        void taskLayoutRevision;
+        void appGroups;
+        var launcherUrls = [];
+        var appIds = [];
+        for (var row = 0; row < taskCount; ++row) {
+            launcherUrls.push(launcherUrlAtTaskRow(row));
+            appIds.push(String(taskRole(modelIndex(row),
+                TaskManager.AbstractTasksModel.AppId) || ""));
+        }
+        return AppGroupStore.buildLayout(launcherUrls, appGroups, appIds);
+    }
+    readonly property int taskVisualCount:
+        taskLayout.modelByVisual.length
+
+    // --- Séparateurs ajoutés par l'utilisateur -------------------------------
+    // Chaque séparateur est mémorisé par l'identité de l'icône qui le précède
+    // (lanceur, groupe ou application), pour rester à sa place quand on épingle
+    // ou désépingle d'autres applications.
+    readonly property var userSeparatorKeys:
+        Plasmoid.configuration.userSeparators || []
+    // Pendant le déplacement d'une icône, les séparateurs restent sur leurs
+    // emplacements (puis sont rattachés aux nouvelles icônes à la dépose).
+    property var separatorSlotOverride: null
+    // Séparateur en cours de déplacement (indice dans userSeparatorKeys) et
+    // emplacement visé.
+    property int separatorDragIndex: -1
+    property int separatorDragVisual: -1
+    property int menuSeparatorVisual: -1
+    // Emplacement de chaque séparateur : indice visuel de l'icône qui le
+    // précède, ou -1 s'il n'est pas affichable. Même ordre que userSeparatorKeys.
+    readonly property var userSeparatorVisualSlots: {
+        void taskLayout;
+        var keys = userSeparatorKeys;
+        var visualKeys = [];
+        for (var v = 0; v < taskVisualCount; ++v) {
+            visualKeys.push(taskItemKeyAtVisual(v));
+        }
+        var result = [];
+        var seen = ({});
+        for (var i = 0; i < keys.length; ++i) {
+            var slot;
+            if (i === separatorDragIndex && separatorDragVisual >= 0) {
+                slot = separatorDragVisual;
+            } else if (separatorSlotOverride !== null
+                    && i < separatorSlotOverride.length) {
+                slot = separatorSlotOverride[i];
+            } else {
+                slot = visualKeys.indexOf(String(keys[i]));
+            }
+            // Un séparateur après la dernière icône des applications n'a pas de
+            // sens (la séparation avec les utilitaires existe déjà).
+            if (slot < 0 || slot > taskVisualCount - 2 || seen[slot] === true) {
+                slot = -1;
+            } else {
+                seen[slot] = true;
+            }
+            result.push(slot);
+        }
+        return result;
+    }
+    readonly property int desktopCount:
+        virtualDesktopInfo.numberOfDesktops
+    readonly property bool desktopSwitcherVisible:
+        showDesktopSwitcher && desktopCount > 0
+    readonly property bool desktopSwitcherOnLeft:
+        desktopSwitcherPosition === 0
+    readonly property bool desktopAddButtonVisible:
+        desktopSwitcherVisible && !desktopCreationPending
+    readonly property real desktopButtonSpacing: 4
+    readonly property real desktopAddButtonMainExtent:
+        Math.max(26, Math.round(baseIconSize * 0.6))
+    readonly property int folderItemCount: showFolderView
+        ? 1 + additionalFolderUrls.length : 0
+    readonly property bool powerButtonOnLeft:
+        showPowerButton && powerButtonPosition === 0
+    // Dock indices describe visual order along the main axis. A leading power
+    // button occupies slot zero, so task drag and magnification use this offset.
+    readonly property int taskDockStartIndex:
+        powerButtonOnLeft ? 1 : 0
+    readonly property int folderDockIndex:
+        folderItemCount > 0
+            ? taskDockStartIndex + taskVisualCount : -1
+    readonly property int removableVolumeDockStartIndex:
+        removableVolumeCount > 0
+            ? taskDockStartIndex + taskVisualCount + folderItemCount : -1
+    readonly property int trashDockIndex: showTrash
+        ? taskDockStartIndex + taskVisualCount + folderItemCount
+            + removableVolumeCount : -1
+    readonly property int powerButtonDockIndex: showPowerButton
+        ? (powerButtonOnLeft ? 0
+            : taskVisualCount + folderItemCount + removableVolumeCount
+                + (showTrash ? 1 : 0)) : -1
+    readonly property int trailingUtilityItemCount:
+        folderItemCount + removableVolumeCount + (showTrash ? 1 : 0)
+            + (showPowerButton && !powerButtonOnLeft ? 1 : 0)
+    readonly property int utilityItemCount:
+        folderItemCount + removableVolumeCount + (showTrash ? 1 : 0) + (showPowerButton ? 1 : 0)
+    readonly property int dockItemCount: taskVisualCount + utilityItemCount
+    readonly property bool leadingUtilitySeparatorVisible:
+        powerButtonOnLeft && dockItemCount > 1
+    readonly property bool trailingUtilitySeparatorVisible:
+        taskVisualCount > 0 && trailingUtilityItemCount > 0
+    // Séparations fixes entre les applications et les utilitaires.
+    readonly property var systemSectionBreakAfterDockIndices: {
+        var result = [];
+        if (leadingUtilitySeparatorVisible) {
+            result.push(powerButtonDockIndex);
+        }
+        if (trailingUtilitySeparatorVisible) {
+            result.push(taskDockStartIndex + taskVisualCount - 1);
+        }
+        return result;
+    }
+    // Toutes les séparations : fixes + séparateurs de l'utilisateur.
+    readonly property var sectionBreakAfterDockIndices: {
+        var result = systemSectionBreakAfterDockIndices.slice();
+        var slots = userSeparatorVisualSlots;
+        for (var i = 0; i < slots.length; ++i) {
+            if (slots[i] < 0) {
+                continue;
+            }
+            var dockIndex = taskDockStartIndex + slots[i];
+            if (result.indexOf(dockIndex) < 0) {
+                result.push(dockIndex);
+            }
+        }
+        result.sort(function(a, b) { return a - b; });
+        return result;
+    }
+    readonly property real utilitySectionGap:
+        12
+    readonly property real iconRestMainLength: dockItemCount > 0
+        ? dockItemCount * baseIconSize
+            + (dockItemCount - 1) * itemSpacing
+            + sectionBreakAfterDockIndices.length * utilitySectionGap : 0
+    readonly property real desktopSwitcherMainExtent:
+        desktopSwitcherVisible ? calculateDesktopSwitcherMainExtent() : 0
+    readonly property real desktopSwitcherSectionSpacing:
+        desktopSwitcherVisible && dockItemCount > 0 ? 16 : 0
+    readonly property real desktopSwitcherLeadingExtent:
+        desktopSwitcherVisible && desktopSwitcherOnLeft
+            ? desktopSwitcherMainExtent + desktopSwitcherSectionSpacing : 0
+    readonly property real restMainLength: iconRestMainLength
+        + desktopSwitcherMainExtent + desktopSwitcherSectionSpacing
+    // Place libre de chaque côté du Dock au repos : c'est elle qui limite
+    // l'agrandissement au survol (et non l'espacement des icônes).
+    readonly property real zoomRoom: {
+        var screen = baseWindow ? baseWindow.screen : null;
+        if (!screen) {
+            return 100000;
+        }
+        var screenMain = isVertical ? screen.height : screen.width;
+        return Math.max(0, screenMain - 2 * panelEdgeMargin
+            - (restMainLength + 2 * mainMargin + 2 * windowPadding));
+    }
+    // Agrandissement de l'ensemble du Dock pour un grossissement maximal de
+    // 2 : l'expansion est proportionnelle à (grossissement - 1).
+    readonly property real unitWaveExpansion:
+        maximumWaveExpansion(dockItemCount, 2.0)
+    // Grossissement maximal réellement utilisé : celui des réglages tant que
+    // le Dock agrandi tient dans l'écran, sinon réduit pour qu'il y tienne.
+    readonly property real effectiveMaxScale: {
+        if (maxScale <= 1.0 || unitWaveExpansion <= 0.001) {
+            return maxScale;
+        }
+        return 1.0 + Math.max(0, Math.min(maxScale - 1.0,
+            zoomRoom / unitWaveExpansion));
+    }
+    readonly property real maximumExpansion:
+        maximumWaveExpansion(dockItemCount, effectiveMaxScale)
+    readonly property bool hasDockContent:
+        dockItemCount > 0 || desktopSwitcherVisible
+    readonly property real preferredMainLength: hasDockContent
+        ? restMainLength + 2 * mainMargin : Kirigami.Units.gridUnit
+    readonly property real maximumOverlayMainLength: hasDockContent
+        ? restMainLength + maximumExpansion + 2 * mainMargin
+        : Kirigami.Units.gridUnit
+    readonly property real overlayCrossLength:
+        maximumIconSize + indicatorSpace + 2 * crossMargin
+            + 2 * windowPadding
+    readonly property real overlayWindowWidth: isVertical
+        ? overlayCrossLength : maximumOverlayMainLength + 2 * windowPadding
+    readonly property real overlayWindowHeight: isVertical
+        ? maximumOverlayMainLength + 2 * windowPadding : overlayCrossLength
+    readonly property real baseWindowWidth: isVertical
+        ? baseSurfaceCrossLength : baseSurfaceMainLength
+    readonly property real baseWindowHeight: isVertical
+        ? baseSurfaceMainLength : baseSurfaceCrossLength
+    readonly property real overlayWindowMainLength: isVertical
+        ? overlayWindowHeight : overlayWindowWidth
+    readonly property real baseWindowMainLength: isVertical
+        ? baseWindowHeight : baseWindowWidth
+
+    Layout.minimumWidth: 1
+    Layout.minimumHeight: 1
+    Layout.preferredWidth: 1
+    Layout.preferredHeight: 1
+    Layout.maximumWidth: 1
+    Layout.maximumHeight: 1
+    Layout.fillWidth: false
+    Layout.fillHeight: false
+
+    width: 1
+    height: 1
+    implicitWidth: 1
+    implicitHeight: 1
+
+    property bool taskModelReady: false
+    property bool overlayOpen: false
+    readonly property bool dockAvailable: hasDockContent
+        && representationItem !== null
+    readonly property bool showProgressIndicators:
+        Plasmoid.configuration.showProgressIndicators === undefined
+            ? true : Boolean(Plasmoid.configuration.showProgressIndicators)
+
+    readonly property bool showKdeConnectRecentShares:
+        Plasmoid.configuration.showKdeConnectRecentShares === undefined
+            ? true : Boolean(Plasmoid.configuration.showKdeConnectRecentShares)
+
+    ProgressController {
+        id: progressController
+        monitoringEnabled: root.showProgressIndicators
+    }
+
+    DockEffects.KdeConnectShareMonitor {
+        id: kdeConnectMonitor
+        enabled: root.showKdeConnectRecentShares
+    }
+
+    DockEffects.RemovableVolumesModel {
+        id: removableVolumesModel
+        openInNewTab: root.openRemovableVolumesInNewTab
+        onOperationFailed: (udi, message) => {
+            console.warn("macOS Dock: volume operation failed for", udi, ":", message);
+        }
+    }
+    readonly property var recentKdeConnectShares:
+        kdeConnectMonitor.recentShares
+    property bool maximizedWindowPresent: false
+    property bool fullscreenWindowPresent: false
+    property bool windowStateUpdatePending: false
+    readonly property bool autoHideRequired:
+        fullscreenWindowPresent
+            || (hideOnMaximized && maximizedWindowPresent)
+    property bool revealedForMaximized: false
+    readonly property bool dockRequestedVisible: dockAvailable
+        && !fullscreenWindowPresent
+        && (!autoHideRequired || revealedForMaximized
+            || baseHovered || overlayHovered || openMenuCount > 0
+            || openPreviewCount > 0)
+    property real dockRevealProgress: dockRequestedVisible ? 1.0 : 0.0
+    readonly property bool dockWindowVisible: dockAvailable
+        && (dockRequestedVisible || dockRevealProgress > 0.001)
+    // Nombre d'icônes dont l'application est en cours de démarrage (rebond).
+    property int startupBounceCount: 0
+    // Vrai pendant que les icônes reviennent à leur taille de repos après que
+    // le pointeur a quitté le Dock : la fenêtre agrandie reste affichée jusqu'à
+    // la fin du mouvement, au lieu de disparaître d'un coup (voir
+    // closeOverlayAnimated).
+    property bool overlayCollapsing: false
+    // Durée du retour : le ressort de relâchement (DockItem.releaseResponse)
+    // met environ 11 / omega secondes à se poser, plus une petite marge.
+    readonly property int overlayCollapseDuration:
+        Math.round(11000 / Math.min(magnificationSpring, 18)) + 80
+    readonly property bool overlayVisible:
+        (overlayOpen || overlayCollapsing || startupBounceCount > 0)
+            && dockWindowVisible
+    // Vrai peu après l'affichage de la fenêtre agrandie, le temps qu'elle ait
+    // dessiné sa première image : la base garde alors sa teinte et sa bordure
+    // jusque-là, puis ne montre plus que son verre (voir
+    // DockBackground.coveredByOverlay).
+    property bool overlayCovering: false
+
+    Timer {
+        id: overlayCoverTimer
+
+        interval: 60
+        repeat: false
+        onTriggered: root.overlayCovering = root.overlayVisible
+    }
+
+    // Les icônes ne commencent à s'agrandir que lorsque le fond de la fenêtre
+    // agrandie est entièrement prêt, verre (Liquid Glass) compris. Sinon, les
+    // icônes grossissent tout de suite mais le verre du fond n'existe pas encore
+    // sur les côtés qui s'élargissent, et l'on voit un instant un Dock à moitié
+    // dessiné. Sans verre, ou quand aucune fenêtre n'est derrière le Dock, le
+    // verre est prêt aussitôt et l'agrandissement n'est pas retardé. Au pire,
+    // il démarre après overlayZoomMaxWait.
+    property bool overlayZoomReady: false
+    readonly property bool overlayZoomActive: overlayOpen && overlayZoomReady
+    readonly property int overlayZoomMaxWait: 450
+
+    Timer {
+        id: overlayZoomTimer
+
+        interval: root.overlayZoomMaxWait
+        repeat: false
+        onTriggered: root.overlayZoomReady = root.overlayVisible
+    }
+
+    function updateOverlayZoomReady() {
+        if (!overlayVisible) {
+            overlayZoomTimer.stop();
+            overlayZoomReady = false;
+            return;
+        }
+        if (!overlayZoomReady && overlayBackgroundSurface.glassHandoffReady) {
+            overlayZoomTimer.stop();
+            overlayZoomReady = true;
+        }
+    }
+
+    Connections {
+        target: overlayBackgroundSurface
+
+        function onGlassHandoffReadyChanged() {
+            root.updateOverlayZoomReady();
+        }
+    }
+
+    onOverlayVisibleChanged: {
+        if (overlayVisible) {
+            overlayCoverTimer.restart();
+            overlayZoomReady = false;
+            overlayZoomTimer.restart();
+            updateOverlayZoomReady();
+        } else {
+            overlayCoverTimer.stop();
+            overlayCovering = false;
+            updateOverlayZoomReady();
+        }
+    }
+    property Item representationItem: null
+    property bool baseHovered: false
+    property bool overlayHovered: false
+    property bool edgeHovered: false
+    property int openMenuCount: 0
+    property int openPreviewCount: 0
+    property bool folderPopupCountedAsOpen: false
+    property bool folderPopupOpenPending: false
+    property bool folderPopupAutoOpened: false
+    property bool autoOpenedFolderHovered: false
+    property bool appGroupPopupCountedAsOpen: false
+    property bool appGroupPopupOpenPending: false
+    property bool appGroupPopupAutoOpened: false
+    property bool autoOpenedAppGroupHovered: false
+    property string activeAppGroupId: ""
+    property bool folderDropActive: false
+    property url activeFolderUrl: configuredFolderUrl
+    property bool desktopCreationPending: false
+    property int trashItemCount: 0
+    property var openContextMenu: null
+    property string pendingLauncherToggle: ""
+    property real lastPointerMain: isVertical
+        ? overlayWindowHeight / 2 : overlayWindowWidth / 2
+    // Position du pointeur dans la fenêtre agrandie : l'éclairage de la
+    // bordure la suit.
+    // Tant qu'un menu est ouvert, l'agrandissement reste là où il était : les
+    // mouvements du pointeur ne le déplacent plus.
+    readonly property bool pointerFrozen: openMenuCount > 0
+    // Dernière position vue pendant le gel : appliquée à la fermeture du menu,
+    // sinon l'agrandissement reste sur l'ancienne position jusqu'au prochain
+    // mouvement de la souris.
+    property bool pendingPointerValid: false
+    property real pendingPointerMain: 0
+    property real pendingPointerX: 0
+    property real pendingPointerY: 0
+
+    function notePointer(main, x, y) {
+        pendingPointerMain = main;
+        pendingPointerX = x;
+        pendingPointerY = y;
+        pendingPointerValid = true;
+        if (!pointerFrozen) {
+            lastPointerMain = main;
+            pointerX = x;
+            pointerY = y;
+        }
+    }
+    property real pointerX: overlayWindowWidth / 2
+    property real pointerY: overlayWindowHeight / 2
+
+    // Coin supérieur gauche (en pixels écran) d'une fenêtre du Dock. Sert à
+    // retrouver quelle partie du fond d'écran se trouve derrière le Dock.
+    function dockWindowOrigin(win) {
+        var screen = win ? win.screen : null;
+        if (!screen) {
+            return Qt.point(0, 0);
+        }
+        var left;
+        var top;
+        if (isVertical) {
+            left = dockLocation === PlasmaCore.Types.LeftEdge
+                ? panelEdgeMargin
+                : screen.width - panelEdgeMargin - win.width;
+            top = (screen.height - win.height) / 2;
+        } else {
+            left = (screen.width - win.width) / 2;
+            top = dockLocation === PlasmaCore.Types.TopEdge
+                ? panelEdgeMargin
+                : screen.height - panelEdgeMargin - win.height;
+        }
+        return Qt.point(left, top);
+    }
+
+    // --- Fond d'écran pour le flou de l'arrière-plan -------------------------
+    // { source, fillMode, width, height } ; source vide = fond non trouvé.
+    property var wallpaperInfo: ({ "source": "", "fillMode": 2,
+        "width": 0, "height": 0 })
+    property bool wallpaperMissingLogged: false
+
+    DockEffects.WallpaperLocator {
+        id: wallpaperLocator
+    }
+
+    function wallpaperImageNode(node, depth) {
+        if (!node || depth > 12) {
+            return null;
+        }
+        var found = null;
+        try {
+            if (node.source !== undefined && node.fillMode !== undefined
+                    && String(node.source).length > 0) {
+                return node;
+            }
+            if (node.item) {
+                found = wallpaperImageNode(node.item, depth + 1);
+                if (found) {
+                    return found;
+                }
+            }
+            if (node.currentItem) {
+                found = wallpaperImageNode(node.currentItem, depth + 1);
+                if (found) {
+                    return found;
+                }
+            }
+            var children = node.children;
+            if (children) {
+                for (var i = 0; i < children.length; ++i) {
+                    found = wallpaperImageNode(children[i], depth + 1);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+        } catch (error) {
+            return null;
+        }
+        return null;
+    }
+
+    function wallpaperObject() {
+        var holders = [];
+        try {
+            if (Plasmoid.containmentItem) {
+                holders.push(Plasmoid.containmentItem);
+            }
+        } catch (error) {
+            // Propriété absente sur cette version de Plasma
+        }
+        try {
+            if (Plasmoid.containment) {
+                holders.push(Plasmoid.containment);
+            }
+        } catch (error) {
+            // idem
+        }
+        var ancestor = root.parent;
+        for (var depth = 0; ancestor && depth < 8; ++depth) {
+            holders.push(ancestor);
+            ancestor = ancestor.parent;
+        }
+        for (var i = 0; i < holders.length; ++i) {
+            try {
+                if (holders[i].wallpaperGraphicsObject) {
+                    return holders[i].wallpaperGraphicsObject;
+                }
+            } catch (error) {
+                // on essaie le suivant
+            }
+        }
+        return null;
+    }
+
+    function fileUrl(path) {
+        var text = String(path || "");
+        if (text.length > 0 && text.indexOf("://") < 0
+                && text.charAt(0) === "/") {
+            return "file://" + text;
+        }
+        return text;
+    }
+
+    function refreshWallpaperInfo() {
+        var screen = baseWindow ? baseWindow.screen : null;
+        var screenWidth = screen ? screen.width : 0;
+        var screenHeight = screen ? screen.height : 0;
+        var source = "";
+        var fillMode = 2;
+        var width = screenWidth;
+        var height = screenHeight;
+
+        var manual = String(Plasmoid.configuration.wallpaperBlurImage || "");
+        var located = null;
+        if (manual.length === 0 && screen) {
+            // Lecture directe de la configuration de Plasma : plus fiable que
+            // de fouiller l'interface du bureau.
+            try {
+                located = wallpaperLocator.currentWallpaper(
+                    Qt.application.screens.indexOf(screen));
+            } catch (error) {
+                located = null;
+            }
+        }
+        if (manual.length > 0) {
+            source = fileUrl(manual);
+        } else if (located && located.source) {
+            source = String(located.source);
+            fillMode = Number(located.fillMode);
+        } else {
+            var wallpaper = wallpaperObject();
+            if (wallpaper) {
+                var image = wallpaperImageNode(wallpaper, 0);
+                if (image) {
+                    source = fileUrl(image.source);
+                    fillMode = Number(image.fillMode);
+                } else {
+                    try {
+                        var configuration = wallpaper.configuration;
+                        if (configuration && configuration.Image) {
+                            source = fileUrl(configuration.Image);
+                            if (configuration.FillMode !== undefined) {
+                                fillMode = Number(configuration.FillMode);
+                            }
+                        }
+                    } catch (error) {
+                        source = "";
+                    }
+                }
+                if (wallpaper.width > 0 && wallpaper.height > 0) {
+                    width = wallpaper.width;
+                    height = wallpaper.height;
+                }
+            }
+        }
+        if (source.length === 0 && !wallpaperMissingLogged) {
+            wallpaperMissingLogged = true;
+            console.warn("macOS Dock: wallpaper not found for the background blur;"
+                + " choose the image in the settings.");
+        }
+        var previous = wallpaperInfo;
+        if (previous.source !== source || previous.fillMode !== fillMode
+                || previous.width !== width || previous.height !== height) {
+            wallpaperInfo = { "source": source, "fillMode": fillMode,
+                "width": width, "height": height };
+        }
+    }
+
+    Timer {
+        // Fréquent tant que le fond n'est pas trouvé, rare ensuite : la
+        // lecture de la configuration de Plasma se fait sur le fil de l'interface.
+        interval: root.wallpaperInfo.source.length > 0 ? 20000 : 4000
+        repeat: true
+        running: root.glassEnabled
+            || root.showSpotlightButton || root.spotlightReplaceLauncher
+            || (root.borderColorFromWallpaper
+                && (root.borderStrength > 0.001
+                    || root.borderLightIntensity > 0.001))
+        triggeredOnStart: true
+        onTriggered: root.refreshWallpaperInfo()
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+
+        function onWallpaperBlurImageChanged() {
+            root.refreshWallpaperInfo();
+        }
+    }
+
+    // Vrai pendant et juste après un changement de bureau : le Dock prend
+    // aussitôt l'état du nouveau bureau (affiché ou masqué selon qu'une fenêtre
+    // y est agrandie) au lieu de glisser pendant l'animation du bureau.
+    property bool desktopSwitching: false
+
+    Timer {
+        id: desktopSwitchTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: root.desktopSwitching = false
+    }
+
+    Connections {
+        target: virtualDesktopInfo
+
+        function onCurrentDesktopChanged() {
+            // Diagnostic : visible dans le journal (journalctl --user -b).
+            console.info("macOS Dock: desktop changed, maximized before:",
+                root.maximizedWindowPresent, "reveal:",
+                root.dockRevealProgress.toFixed(2));
+            root.desktopSwitching = true;
+            desktopSwitchTimer.restart();
+            root.updateScreenWindowState();
+        }
+    }
+
+    Behavior on dockRevealProgress {
+        // Beim Aufdecken bewegt sich mit OutQuint der Grossteil des Weges
+        // sofort und laeuft dann lange weich aus - dieselbe Dauer wie zuvor,
+        // aber deutlich gleitender als OutCubic. Beim Verbergen bleibt es bei
+        // einer beschleunigenden Kurve, damit das Dock zuegig verschwindet
+        // statt traege wegzukriechen.
+        NumberAnimation {
+            // Après un changement de bureau, le Dock apparaît d'un coup (il
+            // prend aussitôt l'état du nouveau bureau : durée nulle), mais il
+            // disparaît en glissant quand une fenêtre agrandie l'y attend.
+            duration: root.dockRequestedVisible
+                ? (root.desktopSwitching ? 0 : root.dockRevealDuration)
+                : root.dockHideDuration
+            easing.type: root.dockRequestedVisible
+                ? Easing.OutQuint : Easing.InQuad
+        }
+    }
+
+    FontMetrics {
+        id: desktopLabelMetrics
+
+        font.pixelSize: 13
+        font.weight: Font.DemiBold
+    }
+
+    DockEffects.WindowActions {
+        id: windowActions
+
+        onVirtualDesktopCreationFinished:
+            root.desktopCreationPending = false
+    }
+
+    Sessions.SessionManagement {
+        id: sessionManagement
+    }
+
+    // Espacement réellement utilisé : celui des réglages, tant que le Dock AU
+    // REPOS (icônes, séparations, marges) tient dans l'écran. Il ne diminue
+    // que lorsque le Dock est sur le point de toucher les bords. Le
+    // grossissement au survol n'entre pas dans le calcul.
+    function fittedItemSpacing(requested) {
+        var screen = baseWindow ? baseWindow.screen : null;
+        var count = dockItemCount;
+        if (!screen || count < 2) {
+            return requested;
+        }
+        var screenMain = isVertical ? screen.height : screen.width;
+        var fixedLength = count * baseIconSize
+            + sectionBreakAfterDockIndices.length * utilitySectionGap
+            + desktopSwitcherMainExtent + desktopSwitcherSectionSpacing
+            + 2 * mainMargin + 2 * windowPadding + 2 * panelEdgeMargin;
+        var room = (screenMain - fixedLength) / (count - 1);
+        return Math.max(0, Math.min(requested, room));
+    }
+
+    function boundedNumber(value, fallback, minimum, maximum) {
+        var number = Number(value);
+        if (!Number.isFinite(number)) {
+            number = fallback;
+        }
+        return Math.min(maximum, Math.max(minimum, number));
+    }
+
+    function desktopIdAt(index) {
+        var ids = virtualDesktopInfo.desktopIds || [];
+        return index >= 0 && index < ids.length ? String(ids[index]) : "";
+    }
+
+    function desktopNameAt(index) {
+        var names = virtualDesktopInfo.desktopNames || [];
+        if (index >= 0 && index < names.length
+                && String(names[index]).length > 0) {
+            return String(names[index]);
+        }
+        return i18n("Desktop %1", index + 1);
+    }
+
+    function desktopLabelAt(index) {
+        return desktopSwitcherLabelMode === 0
+            ? String(index + 1) : desktopNameAt(index);
+    }
+
+    function desktopButtonMainExtent(index) {
+        if (desktopSwitcherLabelMode === 0) {
+            return Math.max(26, Math.round(baseIconSize * 0.6));
+        }
+        return Math.max(56, Math.min(160,
+            desktopLabelMetrics.advanceWidth(desktopLabelAt(index)) + 24));
+    }
+
+    function desktopButtonMainStart(index) {
+        var result = 0;
+        for (var previous = 0; previous < index; ++previous) {
+            result += desktopButtonMainExtent(previous)
+                + desktopButtonSpacing;
+        }
+        return result;
+    }
+
+    function calculateDesktopSwitcherMainExtent() {
+        var result = 0;
+        for (var index = 0; index < desktopCount; ++index) {
+            result += desktopButtonMainExtent(index);
+            if (index < desktopCount - 1) {
+                result += desktopButtonSpacing;
+            }
+        }
+        if (desktopAddButtonVisible) {
+            if (desktopCount > 0) {
+                result += desktopButtonSpacing;
+            }
+            result += desktopAddButtonMainExtent;
+        }
+        return result;
+    }
+
+    function isDesktopActive(index) {
+        return desktopIdAt(index)
+            === String(virtualDesktopInfo.currentDesktop || "");
+    }
+
+    function activateDesktop(index) {
+        if (index >= 0 && index < desktopCount) {
+            windowActions.requestVirtualDesktopActivation(index + 1);
+        }
+    }
+
+    function createDesktop() {
+        if (desktopCreationPending) {
+            return;
+        }
+        desktopCreationPending = true;
+        if (!windowActions.createVirtualDesktop(desktopCount)) {
+            desktopCreationPending = false;
+        }
+    }
+
+    function folderUrlAt(index) {
+        if (index === 0) {
+            return configuredFolderUrl;
+        }
+        var additionalIndex = index - 1;
+        return additionalIndex >= 0
+                && additionalIndex < additionalFolderUrls.length
+            ? additionalFolderUrls[additionalIndex] : "";
+    }
+
+    function folderName(folderUrl) {
+        var path = String(folderUrl || "").replace(/\/$/, "");
+        try {
+            path = decodeURIComponent(path);
+        } catch (error) {
+            // A malformed escape sequence must not break Dock delegates.
+        }
+        var slash = path.lastIndexOf("/");
+        var name = slash >= 0 ? path.substring(slash + 1) : path;
+        return name.length > 0 ? name : i18n("Folder");
+    }
+
+    function folderIconName(folderUrl) {
+        var candidate = comparableFolderUrl(folderUrl);
+        var downloads = comparableFolderUrl(defaultFolderUrl);
+        // Le dossier principal du Dock (Téléchargements par défaut) peut avoir
+        // une image personnalisée.
+        if (customFolderIcon.length > 0 && candidate.length > 0
+                && (candidate === downloads
+                    || candidate === comparableFolderUrl(configuredFolderUrl))) {
+            return customFolderIcon.indexOf("/") === 0
+                ? "file://" + customFolderIcon : customFolderIcon;
+        }
+        return candidate.length > 0 && candidate === downloads
+            ? "folder-download" : "folder";
+    }
+
+    function comparableFolderUrl(folderUrl) {
+        var canonical = windowActions.canonicalDirectoryUrl(folderUrl);
+        if (canonical.length > 0) {
+            return canonical;
+        }
+        return String(folderUrl || "").replace(/\/$/, "");
+    }
+
+    function containsFolderUrl(folderUrls, candidate) {
+        var comparableCandidate = comparableFolderUrl(candidate);
+        if (comparableCandidate.length === 0) {
+            return false;
+        }
+        for (var index = 0; index < folderUrls.length; ++index) {
+            if (comparableFolderUrl(folderUrls[index])
+                    === comparableCandidate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function droppedUrlsContainFolder(urls) {
+        var values = urls || [];
+        for (var index = 0; index < values.length; ++index) {
+            if (windowActions.canonicalDirectoryUrl(values[index]).length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function addDroppedFolders(urls) {
+        var next = [];
+        for (var existingIndex = 0;
+                existingIndex < additionalFolderUrls.length;
+                ++existingIndex) {
+            next.push(String(additionalFolderUrls[existingIndex]));
+        }
+
+        var changed = false;
+        var values = urls || [];
+        for (var index = 0; index < values.length; ++index) {
+            var folderUrl = windowActions.canonicalDirectoryUrl(values[index]);
+            if (folderUrl.length === 0
+                    || comparableFolderUrl(configuredFolderUrl)
+                        === comparableFolderUrl(folderUrl)
+                    || containsFolderUrl(next, folderUrl)) {
+                continue;
+            }
+            next.push(folderUrl);
+            changed = true;
+        }
+
+        if (changed) {
+            Plasmoid.configuration.folderUrls = next;
+            Plasmoid.configuration.showFolderView = true;
+            revealDock();
+            overlayOpen = true;
+        }
+        return changed;
+    }
+
+    function removeAdditionalFolder(folderUrl) {
+        var target = comparableFolderUrl(folderUrl);
+        var next = [];
+        var changed = false;
+        for (var index = 0; index < additionalFolderUrls.length; ++index) {
+            if (comparableFolderUrl(additionalFolderUrls[index]) === target) {
+                changed = true;
+            } else {
+                next.push(String(additionalFolderUrls[index]));
+            }
+        }
+        if (changed) {
+            if (comparableFolderUrl(activeFolderUrl) === target) {
+                closeFolderPopup();
+            }
+            Plasmoid.configuration.folderUrls = next;
+        }
+    }
+
+    function openFolderExternally(folderUrl) {
+        Folder.AppLauncher.openUrl(folderUrl || configuredFolderUrl);
+    }
+
+    function openTrashExternally() {
+        Folder.AppLauncher.openUrl("trash:/");
+    }
+
+    function emptyTrash() {
+        trashModel.emptyTrashBin();
+    }
+
+    function openFolderPopup(folderUrl, visualParent) {
+        var targetUrl = String(folderUrl || configuredFolderUrl);
+        if (folderPopup.visible) {
+            folderPopup.dismiss(true);
+        }
+        activeFolderUrl = targetUrl;
+        folderModel.url = targetUrl;
+        revealDock();
+        overlayOpen = true;
+        folderPopup.visualParent = visualParent;
+        if (!folderPopupOpenPending) {
+            folderPopupOpenPending = true;
+            Qt.callLater(runScheduledFolderPopupOpen);
+        }
+    }
+
+    function toggleFolderPopup(folderUrl, visualParent) {
+        var targetUrl = String(folderUrl || configuredFolderUrl);
+        var sameTarget = comparableFolderUrl(activeFolderUrl)
+            === comparableFolderUrl(targetUrl);
+        closeAppGroupPopup();
+        if (((folderPopup.visible && folderPopup.expanded)
+                || folderPopupOpenPending) && sameTarget) {
+            closeFolderPopup();
+            return;
+        }
+        folderPopupAutoOpened = false;
+        openFolderPopup(targetUrl, visualParent);
+    }
+
+    // Vom Überfahren ausgelöster Weg. Anders als der Klick schaltet er nicht
+    // um: ist der Ordner schon offen, bleibt er offen.
+    function autoOpenFolderPopup(folderUrl, visualParent) {
+        var targetUrl = String(folderUrl || configuredFolderUrl);
+        if ((folderPopup.visible || folderPopupOpenPending)
+                && comparableFolderUrl(activeFolderUrl)
+                    === comparableFolderUrl(targetUrl)) {
+            return;
+        }
+        closeAppGroupPopup();
+        folderPopupAutoOpened = true;
+        autoOpenedFolderHovered = true;
+        openFolderPopup(targetUrl, visualParent);
+    }
+
+    // Ein von Hand geöffnetes Popup bleibt stehen, solange der Zeiger
+    // irgendwo im Dock ist. Ein automatisch aufgegangenes soll dagegen wieder
+    // verschwinden, sobald man den Ordner verlässt — sonst verdeckt es beim
+    // Weiterfahren zum nächsten Symbol die halbe Ecke.
+    function noteFolderItemHover(folderUrl, hovered) {
+        var isAutoOpenedFolder = folderPopupAutoOpened
+            && comparableFolderUrl(activeFolderUrl)
+                === comparableFolderUrl(folderUrl);
+        if (hovered) {
+            if (isAutoOpenedFolder) {
+                autoOpenedFolderHovered = true;
+                folderPopupCloseTimer.stop();
+            }
+            return;
+        }
+        if (isAutoOpenedFolder) {
+            autoOpenedFolderHovered = false;
+            folderPopupCloseTimer.restart();
+        }
+    }
+
+    function runScheduledFolderPopupOpen() {
+        if (!folderPopupOpenPending) {
+            return;
+        }
+        folderPopupOpenPending = false;
+        if (showFolderView && folderPopup.visualParent) {
+            folderPopup.showPopup();
+        }
+    }
+
+    function closeFolderPopup() {
+        folderPopupOpenPending = false;
+        folderPopupAutoOpened = false;
+        autoOpenedFolderHovered = false;
+        if (folderPopup.visible) {
+            folderPopup.dismiss(false);
+        }
+    }
+
+    function toggleAppGroupPopup(groupId, visualParent) {
+        var group = appGroupById(groupId);
+        if (!group) {
+            return;
+        }
+        var sameTarget = activeAppGroupId === group.id;
+        if ((appGroupPopup.visible || appGroupPopupOpenPending)
+                && sameTarget) {
+            closeAppGroupPopup();
+            return;
+        }
+        closeFolderPopup();
+        if (appGroupPopup.visible) {
+            appGroupPopup.hidePopup();
+        }
+        appGroupPopupAutoOpened = false;
+        autoOpenedAppGroupHovered = false;
+        activeAppGroupId = group.id;
+        appGroupPopup.groupId = group.id;
+        appGroupPopup.groupName = group.name;
+        appGroupPopup.members = groupRuntimeMembers(group, true);
+        appGroupPopup.visualParent = visualParent;
+        revealDock();
+        overlayOpen = true;
+        if (!appGroupPopupOpenPending) {
+            appGroupPopupOpenPending = true;
+            Qt.callLater(runScheduledAppGroupPopupOpen);
+        }
+    }
+
+    function runScheduledAppGroupPopupOpen() {
+        if (!appGroupPopupOpenPending) {
+            return;
+        }
+        appGroupPopupOpenPending = false;
+        if (appGroupById(activeAppGroupId)
+                && appGroupPopup.visualParent) {
+            appGroupPopup.showPopup();
+        }
+    }
+
+    // Vom Überfahren ausgelöster Weg. Schaltet bewusst nicht um: ist die
+    // Gruppe schon offen, bleibt sie offen.
+    function autoOpenAppGroupPopup(groupId, visualParent) {
+        var group = appGroupById(groupId);
+        if (!group) {
+            return;
+        }
+        if ((appGroupPopup.visible || appGroupPopupOpenPending)
+                && activeAppGroupId === group.id) {
+            return;
+        }
+        // Erst öffnen, dann markieren: der Öffnungsweg setzt die Marke
+        // zurück, damit ein Klick nie als automatisch geöffnet gilt.
+        toggleAppGroupPopup(group.id, visualParent);
+        appGroupPopupAutoOpened = true;
+        autoOpenedAppGroupHovered = true;
+    }
+
+    // Wie bei den Ordnern: eine automatisch aufgegangene Gruppe verschwindet
+    // wieder, sobald der Zeiger das Symbol verlässt. Eine angeklickte bleibt
+    // stehen, solange der Zeiger irgendwo im Dock ist.
+    function noteAppGroupItemHover(groupId, hovered) {
+        var isAutoOpenedGroup = appGroupPopupAutoOpened
+            && activeAppGroupId === groupId;
+        if (hovered) {
+            if (isAutoOpenedGroup) {
+                autoOpenedAppGroupHovered = true;
+                appGroupPopupCloseTimer.stop();
+            }
+            return;
+        }
+        if (isAutoOpenedGroup) {
+            autoOpenedAppGroupHovered = false;
+            appGroupPopupCloseTimer.restart();
+        }
+    }
+
+    function closeAppGroupPopup() {
+        appGroupPopupOpenPending = false;
+        appGroupPopupAutoOpened = false;
+        autoOpenedAppGroupHovered = false;
+        if (appGroupPopup.visible) {
+            appGroupPopup.hidePopup();
+        }
+    }
+
+    function updateActiveAppGroupPopup() {
+        if (!activeAppGroupId
+                || (!appGroupPopup.visible
+                    && !appGroupPopupOpenPending)) {
+            return;
+        }
+        var group = appGroupById(activeAppGroupId);
+        if (!group) {
+            closeAppGroupPopup();
+            activeAppGroupId = "";
+            return;
+        }
+        appGroupPopup.groupName = group.name;
+        appGroupPopup.members = groupRuntimeMembers(group, true);
+    }
+
+    function updateTrashCount() {
+        trashItemCount = trashModel.rowCount();
+    }
+
+    function dockSlideX(windowWidth) {
+        var hiddenFraction = 1.0 - dockRevealProgress;
+        if (dockLocation === PlasmaCore.Types.LeftEdge) {
+            return -windowWidth * hiddenFraction;
+        }
+        if (dockLocation === PlasmaCore.Types.RightEdge) {
+            return windowWidth * hiddenFraction;
+        }
+        return 0;
+    }
+
+    function dockSlideY(windowHeight) {
+        var hiddenFraction = 1.0 - dockRevealProgress;
+        if (dockLocation === PlasmaCore.Types.TopEdge) {
+            return -windowHeight * hiddenFraction;
+        }
+        if (dockLocation === PlasmaCore.Types.BottomEdge) {
+            return windowHeight * hiddenFraction;
+        }
+        return 0;
+    }
+
+    function waveScale(distance, maximum) {
+        if (distance >= zoomRadius || maximum <= 1.0) {
+            return 1.0;
+        }
+
+        var influence = 0.5 * (1.0 + Math.cos(Math.PI * distance / zoomRadius));
+        return 1.0 + (maximum - 1.0) * influence;
+    }
+
+    function scaleForIndex(index, pointer, active, mainLength, maximum, iconSize) {
+        if (!active || index < 0 || index >= dockItemCount) {
+            return 1.0;
+        }
+
+        var firstCenter = (mainLength - restMainLength) / 2
+            + iconSize / 2;
+        var center = firstCenter + dockIndexOffset(index);
+        return waveScale(Math.abs(pointer - center), maximum);
+    }
+
+    function maximumWaveExpansion(count, scaleMax) {
+        if (count <= 0 || scaleMax <= 1.0) {
+            return 0;
+        }
+
+        var sampleCount = Math.max(1, (count - 1) * 8);
+        var largest = 0;
+
+        for (var sample = 0; sample <= sampleCount; ++sample) {
+            var pointer = baseIconSize / 2
+                + sample * Math.max(baseIconSize, restMainLength - baseIconSize)
+                    / sampleCount;
+            var expansion = 0;
+            for (var index = 0; index < count; ++index) {
+                var center = baseIconSize / 2 + dockIndexOffset(index);
+                expansion += baseIconSize
+                    * (waveScale(Math.abs(pointer - center), scaleMax) - 1.0);
+            }
+            largest = Math.max(largest, expansion);
+        }
+        return largest;
+    }
+
+    function scheduleOverlayClose() {
+        overlayCloseTimer.restart();
+    }
+
+    // Ferme la fenêtre agrandie quand le pointeur a quitté le Dock : les icônes
+    // et les côtés du fond reviennent à leur place en douceur (ressort lent),
+    // puis la fenêtre agrandie est cachée une fois le mouvement terminé.
+    function closeOverlayAnimated() {
+        if (overlayOpen && dockWindowVisible) {
+            overlayCollapsing = true;
+            overlayCollapseTimer.restart();
+        }
+        overlayOpen = false;
+    }
+
+    // Le pointeur revient : plus rien à replier.
+    onOverlayOpenChanged: {
+        if (overlayOpen) {
+            overlayCollapseTimer.stop();
+            overlayCollapsing = false;
+        }
+    }
+
+    function revealDock() {
+        dockHideTimer.stop();
+        revealedForMaximized = true;
+    }
+
+    // Pointeur arrivé au bord de l'écran : si le Dock est caché, il faut y
+    // rester maximizedRevealDelay ms avant qu'il s'affiche.
+    function requestEdgeReveal() {
+        if (!autoHideRequired || revealedForMaximized
+                || maximizedRevealDelay <= 0) {
+            revealDock();
+            return;
+        }
+        edgeRevealTimer.interval = maximizedRevealDelay;
+        edgeRevealTimer.restart();
+    }
+
+    Timer {
+        id: edgeRevealTimer
+
+        repeat: false
+        onTriggered: {
+            if (root.edgeHovered) {
+                root.revealDock();
+            }
+        }
+    }
+
+    // Un menu ouvert dans plasmashell (par exemple le menu du clic droit sur le
+    // bureau) capte tous les mouvements de la souris : le pointeur « entre »
+    // dans le Dock mais ne le survole plus, et l'agrandissement reste figé sur
+    // la première icône. Quand le pointeur arrive sur le Dock, on referme donc
+    // ces menus, comme le ferait un clic à côté d'eux.
+    //
+    // Renvoie vrai si au moins un menu a été fermé (voir zoomSuppressed).
+    function dismissForeignPopups() {
+        if (openMenuCount > 0 || openPreviewCount > 0
+                || folderPopup.visible || folderPopupOpenPending
+                || appGroupPopup.visible || appGroupPopupOpenPending) {
+            return false;
+        }
+        return windowActions.closeForeignPopups() > 0;
+    }
+
+    // Contournement : après un clic droit sur le bureau, le menu de plasmashell
+    // capte la souris, et même une fois refermé, la fenêtre agrandie ne suit
+    // plus le pointeur (l'agrandissement reste figé sur la première icône).
+    // Quand le pointeur arrive sur le Dock alors qu'un tel menu était ouvert,
+    // on referme le menu et l'agrandissement des icônes est désactivé jusqu'à
+    // ce que le pointeur ait quitté le Dock. Le Dock reste utilisable
+    // (clics, aperçus, bouton droit) ; il ne fait simplement pas l'effet loupe.
+    property bool zoomSuppressed: false
+
+    Timer {
+        id: zoomSuppressResetTimer
+
+        // Le pointeur peut passer d'une fenêtre du Dock à l'autre (bord, base) :
+        // on attend un instant avant de décider qu'il a vraiment quitté le Dock.
+        interval: 600
+        repeat: false
+        onTriggered: {
+            if (!root.baseHovered && !root.overlayHovered
+                    && !root.edgeHovered) {
+                root.zoomSuppressed = false;
+            }
+        }
+    }
+
+    function noteZoomSuppressCheck() {
+        if (zoomSuppressed && !baseHovered && !overlayHovered
+                && !edgeHovered) {
+            zoomSuppressResetTimer.restart();
+        }
+    }
+
+    // Ouvre la fenêtre agrandie (icônes qui grossissent) quand le pointeur
+    // arrive sur le Dock, sauf si un menu étranger vient d'être fermé (voir
+    // zoomSuppressed).
+    function requestOverlayOpen() {
+        if (zoomSuppressed) {
+            return;
+        }
+        if (overlayOpen) {
+            dismissForeignPopups();
+            return;
+        }
+        if (dismissForeignPopups()) {
+            zoomSuppressed = true;
+            return;
+        }
+        overlayCloseTimer.stop();
+        overlayOpen = true;
+    }
+
+    function scheduleDockHide() {
+        if (autoHideRequired && !baseHovered && !overlayHovered
+                && !edgeHovered && openMenuCount === 0
+                && openPreviewCount === 0) {
+            dockHideTimer.restart();
+        }
+    }
+
+    function menuOpened(menu) {
+        if (openContextMenu && openContextMenu !== menu) {
+            openContextMenu.close();
+        }
+        openContextMenu = menu;
+        ++openMenuCount;
+        overlayCloseTimer.stop();
+        revealDock();
+        overlayOpen = true;
+    }
+
+    function menuClosed(menu) {
+        if (openContextMenu === menu) {
+            openContextMenu = null;
+        }
+        openMenuCount = Math.max(0, openMenuCount - 1);
+        if (openMenuCount === 0 && pendingPointerValid
+                && (overlayHovered || baseHovered)) {
+            lastPointerMain = pendingPointerMain;
+            pointerX = pendingPointerX;
+            pointerY = pendingPointerY;
+        }
+        scheduleOverlayClose();
+        scheduleDockHide();
+    }
+
+    function closeOpenContextMenu() {
+        if (openContextMenu) {
+            openContextMenu.close();
+        }
+    }
+
+    function closeTaskPreviewsIn(repeater) {
+        if (!repeater) {
+            return;
+        }
+        for (var index = 0; index < repeater.count; ++index) {
+            var delegate = repeater.itemAt(index);
+            if (delegate) {
+                delegate.setPreviewOpen(false);
+            }
+        }
+    }
+
+    function closeAuxiliaryPreviewsIn(repeater) {
+        if (!repeater) {
+            return;
+        }
+        for (var index = 0; index < repeater.count; ++index) {
+            var delegate = repeater.itemAt(index);
+            if (delegate) {
+                delegate.setPreviewOpen(false);
+            }
+        }
+    }
+
+    function closeTransientUi() {
+        closeOpenContextMenu();
+        closeFolderPopup();
+        closeAppGroupPopup();
+        closeTaskPreviewsIn(baseRepeater);
+        closeTaskPreviewsIn(overlayRepeater);
+        closeAuxiliaryPreviewsIn(folderOverlayRepeater);
+        closeAuxiliaryPreviewsIn(removableVolumeOverlayRepeater);
+        if (trashOverlayItem) {
+            trashOverlayItem.setPreviewOpen(false);
+        }
+        if (powerOverlayItem) {
+            powerOverlayItem.setPreviewOpen(false);
+        }
+    }
+
+    function previewOpened() {
+        ++openPreviewCount;
+        overlayCloseTimer.stop();
+        dockHideTimer.stop();
+        revealDock();
+        overlayOpen = true;
+    }
+
+    function previewClosed() {
+        openPreviewCount = Math.max(0, openPreviewCount - 1);
+        scheduleOverlayClose();
+        scheduleDockHide();
+    }
+
+    function sameStringList(first, second) {
+        var firstLength = first ? first.length : 0;
+        var secondLength = second ? second.length : 0;
+        if (firstLength !== secondLength) {
+            return false;
+        }
+        for (var index = 0; index < firstLength; ++index) {
+            if (String(first[index]) !== String(second[index])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function modelIndex(row) {
+        return tasksModel.makeModelIndex(row);
+    }
+
+    function taskRole(index, role) {
+        return tasksModel.data(index, role);
+    }
+
+    // Qt.DisplayRole liefert im Tasks-Model den Fenstertitel; bei einem
+    // Gruppeneintrag steht dort nur der Anwendungsname, die Titel hängen an
+    // den Kindzeilen. Starterzeilen haben gar kein Fenster und bleiben außen
+    // vor. Wird nur beim Überfahren eines Ordners gerufen, nicht laufend.
+    function collectWindowTitles() {
+        var titles = [];
+        for (var row = 0; row < tasksModel.count; ++row) {
+            var parentIndex = modelIndex(row);
+            if (Boolean(taskRole(parentIndex,
+                    TaskManager.AbstractTasksModel.IsLauncher))) {
+                continue;
+            }
+            if (Boolean(taskRole(parentIndex,
+                    TaskManager.AbstractTasksModel.IsGroupParent))) {
+                var childCount = tasksModel.rowCount(parentIndex);
+                for (var child = 0; child < childCount; ++child) {
+                    var childIndex = tasksModel.makeModelIndex(row, child);
+                    titles.push(String(
+                        taskRole(childIndex, Qt.DisplayRole) || ""));
+                }
+                continue;
+            }
+            titles.push(String(taskRole(parentIndex, Qt.DisplayRole) || ""));
+        }
+        return titles;
+    }
+
+    function folderHasOpenDocument(folderUrl) {
+        if (!autoOpenFolderWithOpenDocument || !showFolderView) {
+            return false;
+        }
+        return openDocumentLocator.hasOpenDocument(folderUrl,
+            collectWindowTitles());
+    }
+
+    function updateScreenWindowState() {
+        windowStateUpdatePending = false;
+        var maximizedPresent = false;
+        var fullscreenPresent = false;
+        for (var row = 0; row < screenWindowsModel.count; ++row) {
+            var index = screenWindowsModel.makeModelIndex(row);
+            maximizedPresent = maximizedPresent || Boolean(
+                screenWindowsModel.data(index,
+                    TaskManager.AbstractTasksModel.IsMaximized));
+            fullscreenPresent = fullscreenPresent || Boolean(
+                screenWindowsModel.data(index,
+                    TaskManager.AbstractTasksModel.IsFullScreen));
+            if (maximizedPresent && fullscreenPresent) {
+                break;
+            }
+        }
+        if (desktopSwitching && (maximizedPresent !== maximizedWindowPresent
+                || fullscreenPresent !== fullscreenWindowPresent)) {
+            console.info("macOS Dock: window state after desktop change,"
+                + " maximized:", maximizedPresent, "fullscreen:",
+                fullscreenPresent);
+        }
+        maximizedWindowPresent = maximizedPresent;
+        fullscreenWindowPresent = fullscreenPresent;
+    }
+
+    function scheduleScreenWindowStateUpdate() {
+        if (windowStateUpdatePending) {
+            return;
+        }
+        windowStateUpdatePending = true;
+        Qt.callLater(updateScreenWindowState);
+    }
+
+    // --- Fenêtres derrière le Dock (verre en temps réel) ---------------------
+    // Liste des fenêtres visibles de cet écran, du dessous au dessus, en
+    // coordonnées de l'écran : [{ id, x, y, w, h }]. Le verre (DockBackground)
+    // ne capture que celles qui touchent le Dock. Recalculée à chaque
+    // changement d'une fenêtre (déplacement, ouverture, fermeture…), mais ne
+    // change la propriété que si le résultat est différent.
+    property var backdropWindows: []
+    property string backdropWindowsKey: ""
+    property int backdropWindowCount: -1
+    property bool backdropUpdatePending: false
+
+    function scheduleBackdropUpdate() {
+        if (backdropUpdatePending) {
+            return;
+        }
+        backdropUpdatePending = true;
+        Qt.callLater(updateBackdropWindows);
+    }
+
+    function updateBackdropWindows() {
+        backdropUpdatePending = false;
+        var screen = baseWindow ? baseWindow.screen : null;
+        var dockWants = glassEnabled && liveBackdrop;
+        var spotlightWants = spotlightWindow.visible && spotlightLiveBackdrop;
+        if (!(dockWants || spotlightWants) || !screen) {
+            if (backdropWindowsKey !== "") {
+                backdropWindows = [];
+                backdropWindowsKey = "";
+            }
+            return;
+        }
+
+        var entries = [];
+        var distinctStacking = {};
+        var distinctCount = 0;
+        for (var row = 0; row < screenWindowsModel.count; ++row) {
+            var index = screenWindowsModel.makeModelIndex(row);
+            var ids = screenWindowsModel.data(index,
+                TaskManager.AbstractTasksModel.WinIdList);
+            var rect = screenWindowsModel.data(index,
+                TaskManager.AbstractTasksModel.Geometry);
+            if (!ids || ids.length < 1 || !rect
+                    || rect.width < 2 || rect.height < 2) {
+                continue;
+            }
+            if (Boolean(screenWindowsModel.data(index,
+                    TaskManager.AbstractTasksModel.SkipTaskbar))) {
+                continue;
+            }
+            var stacking = Number(screenWindowsModel.data(index,
+                TaskManager.AbstractTasksModel.StackingOrder));
+            var activated = Number(screenWindowsModel.data(index,
+                TaskManager.AbstractTasksModel.LastActivated));
+            if (!isFinite(stacking)) {
+                stacking = 0;
+            }
+            if (!isFinite(activated)) {
+                activated = 0;
+            }
+            if (!distinctStacking[stacking]) {
+                distinctStacking[stacking] = true;
+                ++distinctCount;
+            }
+            entries.push({
+                // Identifiant brut (comme pour les aperçus des icônes).
+                "id": ids[0],
+                "x": rect.x - screen.virtualX,
+                "y": rect.y - screen.virtualY,
+                "w": rect.width,
+                "h": rect.height,
+                "stacking": stacking,
+                "activated": activated,
+                "above": Boolean(screenWindowsModel.data(index,
+                    TaskManager.AbstractTasksModel.IsKeepAbove))
+            });
+        }
+
+        // L'ordre d'empilement du bureau si on l'a ; sinon la dernière
+        // activation (la fenêtre utilisée en dernier est au-dessus).
+        var useStacking = distinctCount > 1;
+        entries.sort(function(a, b) {
+            if (a.above !== b.above) {
+                return a.above ? 1 : -1;
+            }
+            return useStacking ? a.stacking - b.stacking
+                : a.activated - b.activated;
+        });
+
+        var result = [];
+        for (var i = 0; i < entries.length; ++i) {
+            result.push({
+                "id": entries[i].id,
+                "x": entries[i].x,
+                "y": entries[i].y,
+                "w": entries[i].w,
+                "h": entries[i].h
+            });
+        }
+        var keyParts = [];
+        for (var k = 0; k < result.length; ++k) {
+            keyParts.push(String(result[k].id) + ":" + result[k].x + ","
+                + result[k].y + "," + result[k].w + "," + result[k].h);
+        }
+        var key = keyParts.join("|");
+        if (key !== backdropWindowsKey) {
+            backdropWindowsKey = key;
+            backdropWindows = result;
+            // Diagnostic : visible dans le journal (journalctl --user -b).
+            if (result.length !== backdropWindowCount) {
+                backdropWindowCount = result.length;
+                console.log("macOS Dock: windows on this screen for the glass:",
+                    result.length);
+            }
+        }
+    }
+
+    onGlassEnabledChanged: scheduleBackdropUpdate()
+    onLiveBackdropChanged: scheduleBackdropUpdate()
+    onSpotlightLiveBackdropChanged: scheduleBackdropUpdate()
+
+    Connections {
+        target: spotlightWindow
+
+        // Le Spotlight ouvert montre les fenêtres derrière son verre.
+        function onVisibleChanged() {
+            root.scheduleBackdropUpdate();
+        }
+    }
+
+    function isGroup(row) {
+        return Boolean(taskRole(modelIndex(row),
+            TaskManager.AbstractTasksModel.IsGroupParent));
+    }
+
+    function preferredWindowIndex(row) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            return parentIndex;
+        }
+
+        var childCount = tasksModel.rowCount(parentIndex);
+        var preferredIndex = childCount > 0
+            ? tasksModel.makeModelIndex(row, 0) : parentIndex;
+        var latestActivation = -1;
+        for (var child = 0; child < childCount; ++child) {
+            var childIndex = tasksModel.makeModelIndex(row, child);
+            if (Boolean(taskRole(childIndex,
+                    TaskManager.AbstractTasksModel.IsActive))) {
+                return childIndex;
+            }
+            var activated = taskRole(childIndex,
+                TaskManager.AbstractTasksModel.LastActivated);
+            var timestamp = activated && activated.getTime
+                ? activated.getTime() : Date.parse(String(activated || ""));
+            if (Number.isFinite(timestamp) && timestamp > latestActivation) {
+                latestActivation = timestamp;
+                preferredIndex = childIndex;
+            }
+        }
+        return preferredIndex;
+    }
+
+    function windowsInfoForTask(row, modelChildCount) {
+        var parentIndex = modelIndex(row);
+        if (!parentIndex || !parentIndex.valid) {
+            return [];
+        }
+        var isGroupParent = isGroup(row);
+        var result = [];
+        if (isGroupParent) {
+            var childCount = tasksModel.rowCount(parentIndex);
+            for (var child = 0; child < childCount; ++child) {
+                var childIndex = tasksModel.makeModelIndex(row, child);
+                var persistentChildIndex =
+                    tasksModel.makePersistentModelIndex(row, child);
+                var winIdList = taskRole(childIndex, TaskManager.AbstractTasksModel.WinIdList);
+                var winId = (winIdList && winIdList.length > 0) ? winIdList[0] : 0;
+                var name = taskRole(childIndex, Qt.DisplayRole)
+                    || taskRole(childIndex,
+                        TaskManager.AbstractTasksModel.AppName) || "";
+                var isActive = Boolean(taskRole(childIndex, TaskManager.AbstractTasksModel.IsActive));
+                var isMinimized = Boolean(taskRole(childIndex, TaskManager.AbstractTasksModel.IsMinimized));
+                result.push({
+                    winId: winId,
+                    title: String(name),
+                    modelIndex: persistentChildIndex,
+                    isActive: isActive,
+                    isMinimized: isMinimized
+                });
+            }
+        } else {
+            var winIdList = taskRole(parentIndex, TaskManager.AbstractTasksModel.WinIdList);
+            var winId = (winIdList && winIdList.length > 0) ? winIdList[0] : 0;
+            var name = taskRole(parentIndex, Qt.DisplayRole)
+                || taskRole(parentIndex,
+                    TaskManager.AbstractTasksModel.AppName) || "";
+            var isActive = Boolean(taskRole(parentIndex, TaskManager.AbstractTasksModel.IsActive));
+            var isMinimized = Boolean(taskRole(parentIndex, TaskManager.AbstractTasksModel.IsMinimized));
+            result.push({
+                winId: winId,
+                title: String(name),
+                modelIndex: tasksModel.makePersistentModelIndex(row),
+                isActive: isActive,
+                isMinimized: isMinimized
+            });
+        }
+        return result;
+    }
+
+    // Layer-Shell-Flächen kennen ihre eigene Bildschirmposition nicht: der
+    // Compositor platziert sie, Qt lässt QWindow::position() auf (0,0) stehen.
+    // mapToGlobal() liefert hier also Fenster- statt Bildschirmkoordinaten.
+    //
+    // Die Position ist trotzdem exakt berechenbar: die Fläche ist an genau
+    // eine Kante verankert und wird auf der freien Achse zentriert (so
+    // definiert es das Layer-Shell-Protokoll für Flächen mit nur einem Anker).
+    function windowScreenOrigin(windowItem) {
+        if (!windowItem) {
+            return null;
+        }
+        var screenItem = windowItem.screen;
+        if (!screenItem) {
+            return null;
+        }
+        // Nur die Kante, an der die Fläche verankert ist, bekommt einen Rand.
+        var edgeMargin = windowItem === edgeWindow ? 0 : root.panelEdgeMargin;
+        var originX;
+        var originY;
+        if (root.isVertical) {
+            originY = screenItem.virtualY
+                + (screenItem.height - windowItem.height) / 2;
+            originX = root.dockLocation === PlasmaCore.Types.LeftEdge
+                ? screenItem.virtualX + edgeMargin
+                : screenItem.virtualX + screenItem.width
+                    - windowItem.width - edgeMargin;
+        } else {
+            originX = screenItem.virtualX
+                + (screenItem.width - windowItem.width) / 2;
+            originY = root.dockLocation === PlasmaCore.Types.TopEdge
+                ? screenItem.virtualY + edgeMargin
+                : screenItem.virtualY + screenItem.height
+                    - windowItem.height - edgeMargin;
+        }
+        return Qt.point(originX, originY);
+    }
+
+    function publishDelegateGeometry(row, delegateItem, windowItem) {
+        if (!root.taskModelReady || row < 0 || row >= root.taskCount
+                || !delegateItem || !windowItem || !windowItem.visible) {
+            return;
+        }
+        var parentIndex = modelIndex(row);
+        if (!parentIndex || !parentIndex.valid) {
+            return;
+        }
+
+        // XWindowTasksModel wertet diesen Rahmen als Bildschirmkoordinaten aus
+        // (_NET_WM_ICON_GEOMETRY) — für XWayland-Anwendungen muss er stimmen.
+        // WaylandTasksModel ignoriert ihn und leitet die Geometrie selbst aus
+        // dem übergebenen Delegate ab, deshalb ist dort ausschlaggebend, dass
+        // dieses Item zu einer gemappten Fläche gehört.
+        var origin = windowScreenOrigin(windowItem);
+        var globalRect;
+        if (origin) {
+            var scenePos = delegateItem.mapToItem(null, 0, 0);
+            globalRect = Qt.rect(origin.x + scenePos.x, origin.y + scenePos.y,
+                delegateItem.width, delegateItem.height);
+        } else {
+            var globalPos = delegateItem.mapToGlobal(0, 0);
+            globalRect = Qt.rect(globalPos.x, globalPos.y,
+                delegateItem.width, delegateItem.height);
+        }
+
+        // TasksModel propagates a group parent's geometry to all children.
+        tasksModel.requestPublishDelegateGeometry(parentIndex, globalRect,
+            delegateItem);
+    }
+
+    // Basis-, Overlay- und Kantenfenster lösen einander ab. Wird eines gerade
+    // erst gemappt, kann die Veröffentlichung noch auf eine fehlende Fläche
+    // treffen; ein zweiter Durchlauf kurz danach fängt das ab.
+    function republishTaskGeometry() {
+        var repeaters = [baseRepeater, overlayRepeater, edgeGeometryRepeater];
+        for (var r = 0; r < repeaters.length; ++r) {
+            var repeater = repeaters[r];
+            if (!repeater) {
+                continue;
+            }
+            for (var i = 0; i < repeater.count; ++i) {
+                var item = repeater.itemAt(i);
+                if (!item) {
+                    continue;
+                }
+                if (item.scheduleGeometryPublish) {
+                    item.scheduleGeometryPublish();
+                } else if (item.publishEdgeGeometry) {
+                    item.publishEdgeGeometry();
+                }
+            }
+        }
+    }
+
+    function activateTask(row, launcher) {
+        var index = modelIndex(row);
+        if (launcher) {
+            tasksModel.requestNewInstance(index);
+            return;
+        }
+
+        var windowIndex = preferredWindowIndex(row);
+        var active = Boolean(taskRole(windowIndex,
+            TaskManager.AbstractTasksModel.IsActive));
+        var minimized = Boolean(taskRole(windowIndex,
+            TaskManager.AbstractTasksModel.IsMinimized));
+        if (active && !minimized) {
+            tasksModel.requestToggleMinimized(windowIndex);
+            return;
+        }
+        tasksModel.requestActivate(windowIndex);
+    }
+
+    function openTask(row, launcher) {
+        var index = modelIndex(row);
+        if (launcher) {
+            tasksModel.requestNewInstance(index);
+        } else {
+            tasksModel.requestActivate(preferredWindowIndex(row));
+        }
+    }
+
+    function allTaskWindowsHaveState(row, stateRole, parentState,
+            modelChildCount) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            return Boolean(parentState);
+        }
+
+        // modelChildCount is passed so the binding is reevaluated whenever a
+        // grouped task gains or loses a child window.
+        var childCount = tasksModel.rowCount(parentIndex);
+        if (childCount === 0) {
+            return Boolean(parentState);
+        }
+        for (var child = 0; child < childCount; ++child) {
+            if (!Boolean(taskRole(tasksModel.makeModelIndex(row, child),
+                    stateRole))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function anyTaskWindowCan(row, capabilityRole, parentCapability,
+            modelChildCount) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            return Boolean(parentCapability);
+        }
+
+        var childCount = tasksModel.rowCount(parentIndex);
+        for (var child = 0; child < childCount; ++child) {
+            if (Boolean(taskRole(tasksModel.makeModelIndex(row, child),
+                    capabilityRole))) {
+                return true;
+            }
+        }
+        return Boolean(parentCapability) && childCount === 0;
+    }
+
+    function setTaskMinimized(row, minimized) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            if (Boolean(taskRole(parentIndex,
+                    TaskManager.AbstractTasksModel.IsMinimizable))
+                    && Boolean(taskRole(parentIndex,
+                        TaskManager.AbstractTasksModel.IsMinimized)) !== minimized) {
+                tasksModel.requestToggleMinimized(parentIndex);
+            }
+            return;
+        }
+
+        var childCount = tasksModel.rowCount(parentIndex);
+        for (var child = 0; child < childCount; ++child) {
+            var childIndex = tasksModel.makeModelIndex(row, child);
+            if (Boolean(taskRole(childIndex,
+                    TaskManager.AbstractTasksModel.IsMinimizable))
+                    && Boolean(taskRole(childIndex,
+                        TaskManager.AbstractTasksModel.IsMinimized)) !== minimized) {
+                tasksModel.requestToggleMinimized(childIndex);
+            }
+        }
+    }
+
+    function setTaskMaximized(row, maximized) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            if (Boolean(taskRole(parentIndex,
+                    TaskManager.AbstractTasksModel.IsMaximizable))
+                    && Boolean(taskRole(parentIndex,
+                        TaskManager.AbstractTasksModel.IsMaximized)) !== maximized) {
+                tasksModel.requestToggleMaximized(parentIndex);
+            }
+            return;
+        }
+
+        var childCount = tasksModel.rowCount(parentIndex);
+        for (var child = 0; child < childCount; ++child) {
+            var childIndex = tasksModel.makeModelIndex(row, child);
+            if (Boolean(taskRole(childIndex,
+                    TaskManager.AbstractTasksModel.IsMaximizable))
+                    && Boolean(taskRole(childIndex,
+                        TaskManager.AbstractTasksModel.IsMaximized)) !== maximized) {
+                tasksModel.requestToggleMaximized(childIndex);
+            }
+        }
+    }
+
+    function taskCanLaunchNewInstance(row, parentCapability,
+            modelChildCount) {
+        var parentIndex = modelIndex(row);
+        if (Boolean(taskRole(parentIndex,
+                TaskManager.AbstractTasksModel.IsLauncher))) {
+            return true;
+        }
+        if (anyTaskWindowCan(row,
+                TaskManager.AbstractTasksModel.CanLaunchNewInstance,
+                parentCapability, modelChildCount)) {
+            return true;
+        }
+
+        var launcher = taskRole(parentIndex,
+            TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon)
+            || taskRole(parentIndex,
+                TaskManager.AbstractTasksModel.LauncherUrl);
+        return String(launcher || "").length > 0;
+    }
+
+    function launchNewInstance(row) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            tasksModel.requestNewInstance(parentIndex);
+            return;
+        }
+
+        var childCount = tasksModel.rowCount(parentIndex);
+        for (var child = 0; child < childCount; ++child) {
+            var childIndex = tasksModel.makeModelIndex(row, child);
+            if (Boolean(taskRole(childIndex,
+                    TaskManager.AbstractTasksModel.CanLaunchNewInstance))) {
+                tasksModel.requestNewInstance(childIndex);
+                return;
+            }
+        }
+        if (childCount > 0) {
+            tasksModel.requestNewInstance(tasksModel.makeModelIndex(row, 0));
+        }
+    }
+
+    function closeTask(row) {
+        var parentIndex = modelIndex(row);
+        if (!isGroup(row)) {
+            tasksModel.requestClose(parentIndex);
+            return;
+        }
+
+        for (var child = tasksModel.rowCount(parentIndex) - 1;
+                child >= 0; --child) {
+            var childIndex = tasksModel.makeModelIndex(row, child);
+            if (Boolean(taskRole(childIndex,
+                    TaskManager.AbstractTasksModel.IsClosable))) {
+                tasksModel.requestClose(childIndex);
+            }
+        }
+    }
+
+    function startInteractiveForceQuit() {
+        windowActions.startInteractiveForceQuit();
+    }
+
+    function launcherUrl(task) {
+        if (!task) {
+            return "";
+        }
+        var value = task.LauncherUrlWithoutIcon || task.LauncherUrl || "";
+        return String(value);
+    }
+
+    function launcherExists(task) {
+        var url = launcherUrl(task);
+        return url.length > 0 && tasksModel.launcherPosition(url) !== -1;
+    }
+
+    function pinnedLauncherForIdentity(launcherUrl, appId) {
+        var targetAppId = AppGroupStore.normalizeAppId(
+            appId || launcherUrl);
+        if (!targetAppId) {
+            return "";
+        }
+        var launchers = tasksModel.launcherList || [];
+        for (var index = 0; index < launchers.length; ++index) {
+            if (AppGroupStore.normalizeAppId(launchers[index])
+                    === targetAppId) {
+                return normalizedLauncherUrl(launchers[index]);
+            }
+        }
+        return "";
+    }
+
+    property int launcherToggleRetries: 0
+
+    function scheduleLauncherToggle(url) {
+        var stableUrl = String(url || "");
+        if (stableUrl.length === 0) {
+            return;
+        }
+
+        // A launcher-only row disappears synchronously when it is unpinned.
+        // Its context menu is owned by the same delegate and, on Qt 6.8+,
+        // lives in a separate transient window; the delegate also owns the
+        // tooltip/preview layer-shell window. Removing the row while any of
+        // them is still closing destroys them while Qt Quick is dispatching
+        // and polishing those windows, which crashes plasmashell.
+        // Close every transient window first, then let a root-owned timer
+        // mutate the model once they are really gone, using a copied URL.
+        pendingLauncherToggle = stableUrl;
+        launcherToggleRetries = 0;
+        closeTransientUi();
+        launcherToggleTimer.interval = 300;
+        launcherToggleTimer.restart();
+    }
+
+    function applyPendingLauncherToggle() {
+        // Menu, popups or previews still open (or still closing): wait.
+        if ((openMenuCount > 0 || openPreviewCount > 0)
+                && launcherToggleRetries < 10) {
+            ++launcherToggleRetries;
+            closeTransientUi();
+            launcherToggleTimer.interval = 150;
+            launcherToggleTimer.restart();
+            return;
+        }
+        launcherToggleRetries = 0;
+
+        var url = pendingLauncherToggle;
+        pendingLauncherToggle = "";
+        if (url.length === 0) {
+            return;
+        }
+
+        if (tasksModel.launcherPosition(url) !== -1) {
+            tasksModel.requestRemoveLauncher(url);
+        } else {
+            tasksModel.requestAddLauncher(url);
+        }
+    }
+
+    Timer {
+        id: launcherToggleTimer
+
+        interval: 300
+        repeat: false
+        onTriggered: root.applyPendingLauncherToggle()
+    }
+
+    function normalizedLauncherUrl(value) {
+        return AppGroupStore.normalizeLauncherUrl(value);
+    }
+
+    function parseAppGroups(serializedGroups) {
+        return AppGroupStore.parse(serializedGroups,
+            i18n("Application"), i18n("Group"));
+    }
+
+    function saveAppGroups(groups) {
+        Plasmoid.configuration.appGroups =
+            AppGroupStore.serialize(groups);
+        scheduleTaskLayoutRefresh();
+    }
+
+    function launcherUrlAtTaskRow(row) {
+        if (!taskModelReady || row < 0 || row >= taskCount) {
+            return "";
+        }
+        var index = modelIndex(row);
+        return normalizedLauncherUrl(
+            taskRole(index,
+                TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon)
+            || taskRole(index, TaskManager.AbstractTasksModel.LauncherUrl)
+            || "");
+    }
+
+    function appGroupForLauncher(launcherUrl) {
+        return AppGroupStore.findGroupForLauncher(
+            appGroups, launcherUrl);
+    }
+
+    function appGroupById(groupId) {
+        return AppGroupStore.findGroupById(appGroups, groupId);
+    }
+
+    function appGroupMemberForLauncher(launcherUrl) {
+        var target = normalizedLauncherUrl(launcherUrl);
+        var group = appGroupForLauncher(target);
+        if (!group) {
+            return null;
+        }
+        for (var index = 0; index < group.members.length; ++index) {
+            if (normalizedLauncherUrl(group.members[index].launcher)
+                    === target) {
+                return group.members[index];
+            }
+        }
+        return null;
+    }
+
+    function appGroupForTask(row, launcherTarget, appId) {
+        var launcher = normalizedLauncherUrl(launcherTarget);
+        if (!launcher) {
+            launcher = launcherUrlAtTaskRow(row);
+        }
+        return AppGroupStore.findGroupForIdentity(
+            appGroups, launcher, appId);
+    }
+
+    function appGroupIdForTask(row) {
+        return row >= 0 && row < taskLayout.groupIdByRow.length
+            ? taskLayout.groupIdByRow[row] : "";
+    }
+
+    function stableVisualIndexForModelIndex(row) {
+        return row >= 0 && row < taskLayout.visualByRow.length
+            ? taskLayout.visualByRow[row] : -1;
+    }
+
+    function stableModelIndexForVisualIndex(visualIndex) {
+        return visualIndex >= 0
+            && visualIndex < taskLayout.modelByVisual.length
+            ? taskLayout.modelByVisual[visualIndex] : -1;
+    }
+
+    function isAppGroupLeaderTask(row, groupId) {
+        return AppGroupStore.isLeader(taskLayout, row, groupId);
+    }
+
+    function taskDelegateForRow(row) {
+        if (row < 0) {
+            return null;
+        }
+        return baseRepeater.itemAt(row) || overlayRepeater.itemAt(row);
+    }
+
+    function fallbackIconName(launcherUrl, appId) {
+        var iconName = String(appId || "").trim();
+        if (iconName) {
+            if (iconName.toLowerCase().endsWith(".desktop")) {
+                iconName = iconName.substring(0, iconName.length - 8);
+            }
+            return iconName;
+        }
+        var launcher = normalizedLauncherUrl(launcherUrl);
+        launcher = launcher.replace(/^application:\/\//, "")
+            .replace(/^applications:/, "");
+        var slashIndex = launcher.lastIndexOf("/");
+        if (slashIndex >= 0) {
+            launcher = launcher.substring(slashIndex + 1);
+        }
+        if (launcher.toLowerCase().endsWith(".desktop")) {
+            launcher = launcher.substring(0, launcher.length - 8);
+        }
+        return launcher || "application-x-executable";
+    }
+
+    function taskSnapshot(row) {
+        var delegate = taskDelegateForRow(row);
+        var index = modelIndex(row);
+        var appId = delegate
+            ? String(delegate.taskAppId || "")
+            : String(taskRole(index,
+                TaskManager.AbstractTasksModel.AppId) || "");
+        var runtimeLauncher = launcherUrlAtTaskRow(row);
+        if (!runtimeLauncher && delegate) {
+            runtimeLauncher =
+                normalizedLauncherUrl(delegate.launcherTarget);
+        }
+        var launcher = pinnedLauncherForIdentity(runtimeLauncher, appId)
+            || runtimeLauncher;
+        if (!launcher) {
+            return null;
+        }
+        var stableAppId = appId
+            || AppGroupStore.normalizeAppId(launcher);
+        var name = delegate
+            ? String(delegate.originalAppName || "")
+            : String(taskRole(index,
+                TaskManager.AbstractTasksModel.AppName)
+                || taskRole(index, Qt.DisplayRole) || "");
+        return {
+            launcher: launcher,
+            name: name || i18n("Application"),
+            icon: fallbackIconName(launcher, stableAppId),
+            appId: stableAppId
+        };
+    }
+
+    function taskRowForLauncher(launcherUrl, appId) {
+        return AppGroupStore.rowForIdentity(
+            taskLayout, launcherUrl, appId);
+    }
+
+    function groupRuntimeMembers(group, includeWindows) {
+        void taskLayoutRevision;
+        var result = [];
+        if (!group || !group.members) {
+            return result;
+        }
+        for (var index = 0; index < group.members.length; ++index) {
+            var storedMember = group.members[index];
+            var row = taskRowForLauncher(storedMember.launcher,
+                storedMember.appId);
+            var delegate = taskDelegateForRow(row);
+            var runtimeMember = {
+                launcher: storedMember.launcher,
+                name: delegate
+                    ? String(delegate.originalAppName)
+                    : storedMember.name,
+                icon: delegate
+                    ? delegate.originalAppIcon
+                    : storedMember.icon,
+                appId: delegate
+                    ? String(delegate.taskAppId || "")
+                    : storedMember.appId,
+                running: delegate
+                    ? Boolean(delegate.runningTask) : false,
+                active: delegate
+                    ? Boolean(delegate.taskIsActive) : false
+            };
+            if (includeWindows) {
+                runtimeMember.windows =
+                    delegate && delegate.runningTask
+                        ? windowsInfoForTask(row,
+                            Number(delegate.childCount)) : [];
+            }
+            result.push(runtimeMember);
+        }
+        return result;
+    }
+
+    function groupPreviewItems(group) {
+        return groupRuntimeMembers(group).slice(0, 4);
+    }
+
+    // Läuft gerade eine Anwendung aus dieser Gruppe? Anders als bei den
+    // Dateiordnern braucht das kein Raten: groupRuntimeMembers() verbindet
+    // jedes gespeicherte Mitglied mit seiner Task-Zeile und weiß damit
+    // sicher, ob es ein Fenster hat.
+    function appGroupHasRunningMember(group) {
+        var members = groupRuntimeMembers(group);
+        for (var index = 0; index < members.length; ++index) {
+            if (members[index].running) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function groupHasRuntimeState(group, stateName) {
+        var members = groupRuntimeMembers(group);
+        for (var index = 0; index < members.length; ++index) {
+            if (Boolean(members[index][stateName])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function groupProgress(group) {
+        // Keep the native progress state as explicit binding dependencies.
+        void progressController.appProgressState;
+        void progressController.unityState;
+        void progressController.appCompletionState;
+
+        var result = {
+            visible: false,
+            progress: 0,
+            indeterminate: false,
+            completing: false
+        };
+        var members = groupRuntimeMembers(group);
+        for (var index = 0; index < members.length; ++index) {
+            var member = members[index];
+            var progress = progressController.getAppProgress(
+                member.appId || "", member.launcher || "");
+            if (!progress.visible) {
+                continue;
+            }
+            result.visible = true;
+            result.progress = Math.max(result.progress,
+                Number(progress.progress || 0));
+            result.indeterminate = result.indeterminate
+                || Boolean(progress.indeterminate);
+            result.completing = result.completing
+                || Boolean(progress.completing);
+        }
+        return result;
+    }
+
+    function canGroupAppSnapshots(source, target) {
+        if (!source || !target || source.launcher === target.launcher) {
+            return false;
+        }
+        var sourceAppId = AppGroupStore.normalizeAppId(
+            source.appId || source.launcher);
+        var targetAppId = AppGroupStore.normalizeAppId(
+            target.appId || target.launcher);
+        if (sourceAppId && sourceAppId === targetAppId) {
+            return false;
+        }
+
+        var targetGroup = AppGroupStore.findGroupForIdentity(
+            appGroups, target.launcher, target.appId);
+        var sourceGroup = AppGroupStore.findGroupForIdentity(
+            appGroups, source.launcher, source.appId);
+        return !sourceGroup
+            && (!targetGroup || targetGroup.members.length < 16);
+    }
+
+    function createOrExtendAppGroup(source, target) {
+        if (!canGroupAppSnapshots(source, target)) {
+            return false;
+        }
+
+        var targetGroup = AppGroupStore.findGroupForIdentity(
+            appGroups, target.launcher, target.appId);
+
+        var nextGroups = appGroups.slice();
+        if (targetGroup) {
+            for (var groupIndex = 0;
+                    groupIndex < nextGroups.length; ++groupIndex) {
+                if (nextGroups[groupIndex].id !== targetGroup.id) {
+                    continue;
+                }
+                var updatedMembers =
+                    nextGroups[groupIndex].members.slice();
+                updatedMembers.push(source);
+                nextGroups[groupIndex] = {
+                    version: 1,
+                    id: targetGroup.id,
+                    name: targetGroup.name,
+                    members: updatedMembers
+                };
+                break;
+            }
+        } else {
+            nextGroups.push({
+                version: 1,
+                id: "group-" + Date.now().toString(36)
+                    + "-" + Math.floor(Math.random() * 1679616).toString(36),
+                name: i18n("Group"),
+                members: [target, source]
+            });
+        }
+
+        if (tasksModel.launcherPosition(source.launcher) === -1) {
+            tasksModel.requestAddLauncher(source.launcher);
+        }
+        if (tasksModel.launcherPosition(target.launcher) === -1) {
+            tasksModel.requestAddLauncher(target.launcher);
+        }
+        saveAppGroups(nextGroups);
+        return true;
+    }
+
+    function renameAppGroup(groupId, name) {
+        var trimmedName = String(name || "").trim();
+        if (!trimmedName) {
+            return;
+        }
+        var nextGroups = appGroups.slice();
+        for (var index = 0; index < nextGroups.length; ++index) {
+            if (nextGroups[index].id !== groupId) {
+                continue;
+            }
+            nextGroups[index] = {
+                version: 1,
+                id: nextGroups[index].id,
+                name: trimmedName,
+                members: nextGroups[index].members.slice()
+            };
+            saveAppGroups(nextGroups);
+            return;
+        }
+    }
+
+    function removeAppFromGroup(groupId, launcherUrl) {
+        var targetLauncher = normalizedLauncherUrl(launcherUrl);
+        var nextGroups = [];
+        for (var groupIndex = 0;
+                groupIndex < appGroups.length; ++groupIndex) {
+            var group = appGroups[groupIndex];
+            if (group.id !== groupId) {
+                nextGroups.push(group);
+                continue;
+            }
+            var remainingMembers = [];
+            for (var memberIndex = 0;
+                    memberIndex < group.members.length; ++memberIndex) {
+                if (group.members[memberIndex].launcher
+                        !== targetLauncher) {
+                    remainingMembers.push(group.members[memberIndex]);
+                }
+            }
+            if (remainingMembers.length >= 2) {
+                nextGroups.push({
+                    version: 1,
+                    id: group.id,
+                    name: group.name,
+                    members: remainingMembers
+                });
+            }
+        }
+        saveAppGroups(nextGroups);
+        updateActiveAppGroupPopup();
+    }
+
+    function ungroupAppGroup(groupId) {
+        var nextGroups = [];
+        for (var index = 0; index < appGroups.length; ++index) {
+            if (appGroups[index].id !== groupId) {
+                nextGroups.push(appGroups[index]);
+            }
+        }
+        closeAppGroupPopup();
+        saveAppGroups(nextGroups);
+    }
+
+    function activateGroupMember(launcherUrl) {
+        var member = appGroupMemberForLauncher(launcherUrl);
+        var row = taskRowForLauncher(launcherUrl,
+            member ? member.appId : "");
+        if (row < 0) {
+            return;
+        }
+        var index = modelIndex(row);
+        activateTask(row, Boolean(taskRole(index,
+            TaskManager.AbstractTasksModel.IsLauncher)));
+    }
+
+    function launchGroupMemberNewInstance(launcherUrl) {
+        var member = appGroupMemberForLauncher(launcherUrl);
+        var row = taskRowForLauncher(launcherUrl,
+            member ? member.appId : "");
+        if (row >= 0) {
+            launchNewInstance(row);
+        }
+    }
+
+    function activateGroupWindow(windowIndex) {
+        if (windowIndex && windowIndex.valid) {
+            tasksModel.requestActivate(windowIndex);
+        }
+    }
+
+    function closeGroupWindow(windowIndex) {
+        if (windowIndex && windowIndex.valid) {
+            tasksModel.requestClose(windowIndex);
+        }
+    }
+
+    function scheduleTaskLayoutRefresh() {
+        taskLayoutRefreshTimer.restart();
+    }
+
+    function scheduleActiveAppGroupPopupRefresh() {
+        if (appGroupPopup.visible || appGroupPopupOpenPending) {
+            appGroupPopupRefreshTimer.restart();
+        }
+    }
+
+    property int dragOriginIndex: -1
+    property int dragTargetIndex: -1
+    property int dragOriginVisualIndex: -1
+    property var dragOriginSnapshot: null
+    property int groupDropCandidateIndex: -1
+    property int groupDropTargetIndex: -1
+    property var groupDropTargetSnapshot: null
+    property real dragStartSceneMain: 0
+    property real dragStartSceneCross: 0
+    property real dragStartSlotCenterMain: 0
+    property bool dragInOverlay: false
+    property bool reorderAnimationActive: false
+    readonly property bool taskDragActive: dragOriginIndex >= 0
+
+    function moveTaskTo(row, targetRow) {
+        var target = Math.max(0, Math.min(taskCount - 1, targetRow));
+        if (target !== row && tasksModel.move(row, target)) {
+            tasksModel.syncLaunchers();
+            return true;
+        }
+        return false;
+    }
+
+    function moveTask(row, offset) {
+        var visualIndex = stableVisualIndexForModelIndex(row);
+        var targetVisualIndex = Math.max(0, Math.min(
+            taskVisualCount - 1, visualIndex + offset));
+        var targetRow =
+            stableModelIndexForVisualIndex(targetVisualIndex);
+        if (targetRow >= 0 && moveTaskTo(row, targetRow)) {
+            reorderAnimationActive = true;
+            reorderAnimationTimer.restart();
+        }
+    }
+
+    // Reordering previews move visual slots without mutating TaskManager.
+    // Centered group drops deliberately keep both slots stable so the target
+    // remains underneath the dragged icon and can show its accept animation.
+    function visualIndexForModelIndex(index) {
+        var stableIndex = stableVisualIndexForModelIndex(index);
+        if (!taskDragActive || dragTargetIndex < 0) {
+            return stableIndex;
+        }
+        return AppGroupStore.visualIndexForDrag(stableIndex,
+            dragOriginVisualIndex, dragTargetIndex,
+            groupDropCandidateIndex >= 0);
+    }
+
+    function modelIndexForVisualIndex(index) {
+        var stableIndex;
+        if (!taskDragActive || dragTargetIndex < 0) {
+            stableIndex = index;
+        } else {
+            stableIndex = AppGroupStore.stableIndexForDragVisual(
+                index, dragOriginVisualIndex, dragTargetIndex,
+                groupDropCandidateIndex >= 0);
+        }
+        return stableModelIndexForVisualIndex(stableIndex);
+    }
+
+    function dockIndexOffset(index) {
+        return desktopSwitcherLeadingExtent
+            + index * (baseIconSize + itemSpacing)
+            + sectionGapBeforeDockIndex(index);
+    }
+
+    function sectionGapBeforeDockIndex(index) {
+        var result = 0;
+        for (var breakIndex = 0;
+                breakIndex < sectionBreakAfterDockIndices.length;
+                ++breakIndex) {
+            if (index > sectionBreakAfterDockIndices[breakIndex]) {
+                result += utilitySectionGap;
+            }
+        }
+        return result;
+    }
+
+    function hasSectionBreakAfterDockIndex(index) {
+        return sectionBreakAfterDockIndices.indexOf(index) !== -1;
+    }
+
+    // Identité stable de l'élément affiché à l'emplacement visuel donné.
+    function taskItemKeyAtVisual(visualIndex) {
+        if (!taskLayout || visualIndex < 0
+                || visualIndex >= taskLayout.modelByVisual.length) {
+            return "";
+        }
+        var row = taskLayout.modelByVisual[visualIndex];
+        var groupId = String(taskLayout.groupIdByRow[row] || "");
+        if (groupId.length > 0) {
+            return AppGroupStore.groupKey(groupId);
+        }
+        var launcherUrl = launcherUrlAtTaskRow(row);
+        var launcher = AppGroupStore.launcherKey(launcherUrl);
+        if (launcher !== AppGroupStore.launcherKey("")) {
+            return launcher;
+        }
+        return AppGroupStore.identityAppIdKey(launcherUrl,
+            String(taskRole(modelIndex(row),
+                TaskManager.AbstractTasksModel.AppId) || ""));
+    }
+
+    function copyUserSeparatorKeys() {
+        var copy = [];
+        for (var i = 0; i < userSeparatorKeys.length; ++i) {
+            copy.push(String(userSeparatorKeys[i]));
+        }
+        return copy;
+    }
+
+    function writeUserSeparatorKeys(keys) {
+        var unique = [];
+        for (var i = 0; i < keys.length; ++i) {
+            if (String(keys[i]).length > 0
+                    && unique.indexOf(String(keys[i])) < 0) {
+                unique.push(String(keys[i]));
+            }
+        }
+        Plasmoid.configuration.userSeparators = unique;
+    }
+
+    // Frontière (indice de l'icône qui précède) la plus proche d'une position
+    // le long de l'axe du Dock, dans les coordonnées du calque.
+    function separatorBoundaryAtMain(pos) {
+        if (taskVisualCount < 2) {
+            return -1;
+        }
+        var nearest = overlayContent.visualIndexAtMainPosition(pos);
+        if (nearest < 0) {
+            return -1;
+        }
+        var center = overlayContent.centerForVisualIndex(
+            taskDockStartIndex + nearest);
+        var boundary = pos >= center ? nearest : nearest - 1;
+        return Math.max(0, Math.min(taskVisualCount - 2, boundary));
+    }
+
+    function addUserSeparatorAfterVisual(visualIndex) {
+        if (visualIndex < 0 || visualIndex > taskVisualCount - 2
+                || userSeparatorVisualSlots.indexOf(visualIndex) >= 0) {
+            return;
+        }
+        var key = taskItemKeyAtVisual(visualIndex);
+        if (key.length === 0) {
+            return;
+        }
+        var next = copyUserSeparatorKeys();
+        next.push(key);
+        writeUserSeparatorKeys(next);
+        reorderAnimationActive = true;
+        reorderAnimationTimer.restart();
+    }
+
+    function removeUserSeparatorAtVisual(visualIndex) {
+        var position = userSeparatorVisualSlots.indexOf(visualIndex);
+        if (position < 0) {
+            return;
+        }
+        var next = copyUserSeparatorKeys();
+        next.splice(position, 1);
+        writeUserSeparatorKeys(next);
+        reorderAnimationActive = true;
+        reorderAnimationTimer.restart();
+    }
+
+    function beginSeparatorDrag(listIndex) {
+        var slot = userSeparatorVisualSlots[listIndex];
+        if (slot === undefined || slot < 0) {
+            return;
+        }
+        overlayCloseTimer.stop();
+        dockHideTimer.stop();
+        separatorDragVisual = slot;
+        separatorDragIndex = listIndex;
+    }
+
+    function updateSeparatorDrag(pos) {
+        if (separatorDragIndex < 0) {
+            return;
+        }
+        overlayCloseTimer.stop();
+        dockHideTimer.stop();
+        var target = separatorBoundaryAtMain(pos);
+        if (target < 0 || target === separatorDragVisual) {
+            return;
+        }
+        for (var i = 0; i < userSeparatorVisualSlots.length; ++i) {
+            if (i !== separatorDragIndex
+                    && userSeparatorVisualSlots[i] === target) {
+                return;
+            }
+        }
+        separatorDragVisual = target;
+        reorderAnimationActive = true;
+        reorderAnimationTimer.restart();
+    }
+
+    function endSeparatorDrag(commit) {
+        var listIndex = separatorDragIndex;
+        var target = separatorDragVisual;
+        if (commit && listIndex >= 0 && target >= 0) {
+            var key = taskItemKeyAtVisual(target);
+            if (key.length > 0) {
+                var next = copyUserSeparatorKeys();
+                next[listIndex] = key;
+                writeUserSeparatorKeys(next);
+            }
+        }
+        separatorDragIndex = -1;
+        separatorDragVisual = -1;
+        scheduleOverlayClose();
+        scheduleDockHide();
+    }
+
+    // Après le déplacement d'une icône, les séparateurs sont rattachés aux
+    // icônes qui occupent maintenant leurs emplacements.
+    function applySeparatorRekey() {
+        if (separatorSlotOverride === null) {
+            return;
+        }
+        var slots = separatorSlotOverride;
+        var next = copyUserSeparatorKeys();
+        for (var i = 0; i < next.length && i < slots.length; ++i) {
+            if (slots[i] >= 0 && slots[i] <= taskVisualCount - 2) {
+                var key = taskItemKeyAtVisual(slots[i]);
+                if (key.length > 0) {
+                    next[i] = key;
+                }
+            }
+        }
+        separatorSlotOverride = null;
+        writeUserSeparatorKeys(next);
+    }
+
+    Timer {
+        id: separatorRekeyTimer
+
+        interval: 150
+        repeat: false
+        onTriggered: root.applySeparatorRekey()
+    }
+
+    function baseCenterForIndex(index) {
+        return mainMargin + dockIndexOffset(index) + baseIconSize / 2;
+    }
+
+    // Centre (sur l'axe transversal) d'une icône non agrandie, dans la fenêtre
+    // de base. Le séparateur s'y centre : il ne doit pas bouger quand on
+    // survole le Dock.
+    function baseIconCrossCenter() {
+        var atStart = (!isVertical && dockLocation === PlasmaCore.Types.TopEdge)
+            || (isVertical && dockLocation === PlasmaCore.Types.LeftEdge);
+        return crossMargin + (atStart ? indicatorSpace : 0) + baseIconSize / 2;
+    }
+
+    function baseSeparatorPositionAfter(index) {
+        return baseCenterForIndex(index) + baseIconSize / 2
+            + (itemSpacing + utilitySectionGap) / 2;
+    }
+
+    function baseDesktopSwitcherStart() {
+        if (desktopSwitcherOnLeft || dockItemCount === 0) {
+            return mainMargin;
+        }
+        return mainMargin + iconRestMainLength
+            + desktopSwitcherSectionSpacing;
+    }
+
+    function baseDesktopSeparatorPosition() {
+        if (!desktopSwitcherVisible || dockItemCount === 0) {
+            return 0;
+        }
+        return desktopSwitcherOnLeft
+            ? mainMargin + desktopSwitcherMainExtent
+                + desktopSwitcherSectionSpacing / 2
+            : mainMargin + iconRestMainLength
+                + desktopSwitcherSectionSpacing / 2;
+    }
+
+    function baseIndexAtMainPosition(pos) {
+        var count = taskVisualCount;
+        if (count <= 0) {
+            return -1;
+        }
+        var bestIndex = 0;
+        var minDiff = Math.abs(pos
+            - baseCenterForIndex(taskDockStartIndex));
+        for (var i = 1; i < count; ++i) {
+            var diff = Math.abs(pos
+                - baseCenterForIndex(taskDockStartIndex + i));
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    function handleTaskDragStarted(delegate, sceneX, sceneY) {
+        if (delegate.appGroupMember) {
+            return;
+        }
+        var sourceSnapshot = taskSnapshot(delegate.index);
+        if (!sourceSnapshot) {
+            return;
+        }
+        dragOriginIndex = delegate.index;
+        dragOriginSnapshot = sourceSnapshot;
+        dragOriginVisualIndex =
+            stableVisualIndexForModelIndex(delegate.index);
+        dragTargetIndex = dragOriginVisualIndex;
+        groupDropCandidateIndex = -1;
+        groupDropTargetIndex = -1;
+        groupDropTargetSnapshot = null;
+        dragInOverlay = delegate.inOverlay;
+        dragStartSceneCross = isVertical ? sceneX : sceneY;
+        separatorRekeyTimer.stop();
+        if (userSeparatorKeys.length > 0 && separatorSlotOverride === null) {
+            separatorSlotOverride = userSeparatorVisualSlots.slice();
+        }
+
+        overlayCloseTimer.stop();
+        dockHideTimer.stop();
+        if (dragInOverlay) {
+            overlayOpen = true;
+            dragStartSceneMain = isVertical ? sceneY : sceneX;
+            dragStartSlotCenterMain =
+                overlayContent.centerForModelIndex(delegate.index);
+        } else {
+            dragStartSceneMain = isVertical ? sceneY : sceneX;
+            dragStartSlotCenterMain = baseCenterForIndex(
+                taskDockStartIndex + dragOriginVisualIndex);
+        }
+    }
+
+    function updateGroupDropCandidate(targetRow) {
+        var targetSnapshot = targetRow >= 0
+            ? taskSnapshot(targetRow) : null;
+        if (!canGroupAppSnapshots(dragOriginSnapshot,
+                targetSnapshot)) {
+            groupDropCandidateIndex = -1;
+            groupDropTargetIndex = -1;
+            groupDropTargetSnapshot = null;
+            return;
+        }
+        if (groupDropCandidateIndex === targetRow
+                && groupDropTargetSnapshot
+                && groupDropTargetSnapshot.launcher
+                    === targetSnapshot.launcher) {
+            return;
+        }
+        groupDropCandidateIndex = targetRow;
+        groupDropTargetIndex = targetRow;
+        groupDropTargetSnapshot = targetSnapshot;
+    }
+
+    function handleTaskDragMoved(delegate, sceneX, sceneY) {
+        if (!taskDragActive) {
+            return;
+        }
+
+        overlayCloseTimer.stop();
+        dockHideTimer.stop();
+
+        var currentSceneMain = isVertical ? sceneY : sceneX;
+        var delta = currentSceneMain - dragStartSceneMain;
+        var dragTargetCenter = dragStartSlotCenterMain + delta;
+
+        var targetIndex = dragInOverlay
+            ? overlayContent.visualIndexAtMainPosition(dragTargetCenter)
+            : baseIndexAtMainPosition(dragTargetCenter);
+
+        if (targetIndex >= 0 && targetIndex < taskVisualCount
+                && targetIndex !== dragTargetIndex) {
+            dragTargetIndex = targetIndex;
+            reorderAnimationActive = true;
+            reorderAnimationTimer.restart();
+        }
+        var currentSceneCross = isVertical ? sceneX : sceneY;
+        var targetSlotCenter = dragInOverlay
+            ? overlayContent.centerForVisualIndex(
+                taskDockStartIndex + targetIndex)
+            : baseCenterForIndex(taskDockStartIndex + targetIndex);
+        var centeredForGrouping = Math.abs(
+            dragTargetCenter - targetSlotCenter)
+                <= baseIconSize * 0.42
+            && Math.abs(currentSceneCross - dragStartSceneCross)
+                <= maximumIconSize * 0.7;
+        updateGroupDropCandidate(centeredForGrouping
+            ? stableModelIndexForVisualIndex(targetIndex) : -1);
+
+        var currentSlotCenter = dragInOverlay
+            ? overlayContent.centerForModelIndex(delegate.index)
+            : baseCenterForIndex(taskDockStartIndex
+                + visualIndexForModelIndex(delegate.index));
+
+        var mainOffset = dragTargetCenter - currentSlotCenter;
+        if (isVertical) {
+            delegate.dragOffsetY = mainOffset;
+            delegate.dragOffsetX = 0;
+        } else {
+            delegate.dragOffsetX = mainOffset;
+            delegate.dragOffsetY = 0;
+        }
+    }
+
+    function handleTaskDragEnded(delegate) {
+        if (!taskDragActive) {
+            return;
+        }
+
+        var sourceIndex = dragOriginIndex;
+        var destinationIndex =
+            stableModelIndexForVisualIndex(dragTargetIndex);
+        var sourceSnapshot = dragOriginSnapshot;
+        var targetSnapshot = groupDropTargetSnapshot;
+
+        if (targetSnapshot) {
+            createOrExtendAppGroup(sourceSnapshot, targetSnapshot);
+        } else if (sourceIndex !== destinationIndex
+                && destinationIndex >= 0) {
+            moveTaskTo(sourceIndex, destinationIndex);
+        } else {
+            tasksModel.syncLaunchers();
+        }
+
+        dragOriginIndex = -1;
+        dragTargetIndex = -1;
+        dragOriginVisualIndex = -1;
+        dragOriginSnapshot = null;
+        groupDropCandidateIndex = -1;
+        groupDropTargetIndex = -1;
+        groupDropTargetSnapshot = null;
+        reorderAnimationActive = true;
+        reorderAnimationTimer.restart();
+        if (separatorSlotOverride !== null) {
+            separatorRekeyTimer.restart();
+        }
+        scheduleOverlayClose();
+        scheduleDockHide();
+    }
+
+    Timer {
+        id: reorderAnimationTimer
+
+        interval: 210
+        repeat: false
+        onTriggered: root.reorderAnimationActive = false
+    }
+
+    Timer {
+        id: taskLayoutRefreshTimer
+
+        interval: 0
+        repeat: false
+        onTriggered: {
+            ++root.taskLayoutRevision;
+            root.updateActiveAppGroupPopup();
+        }
+    }
+
+    Timer {
+        id: appGroupPopupRefreshTimer
+
+        interval: 0
+        repeat: false
+        onTriggered: root.updateActiveAppGroupPopup()
+    }
+
+    // Nachzügler nach einem Fensterwechsel: die native Fläche eines gerade
+    // sichtbar gewordenen Layer-Shell-Fensters entsteht nicht zwingend im
+    // selben Ereigniszyklus. Ein zweiter Durchlauf stellt sicher, dass die
+    // Minimier-Geometrie auch dann ankommt.
+    Timer {
+        id: geometryRepublishTimer
+
+        interval: 150
+        repeat: false
+        onTriggered: root.republishTaskGeometry()
+    }
+
+    Timer {
+        id: overlayCloseTimer
+
+        interval: 250
+        repeat: false
+        onTriggered: {
+            if (!root.baseHovered && !root.overlayHovered
+                    && root.openMenuCount === 0
+                    && root.openPreviewCount === 0) {
+                root.closeOverlayAnimated();
+            }
+        }
+    }
+
+    Timer {
+        id: overlayCollapseTimer
+
+        interval: root.overlayCollapseDuration
+        repeat: false
+        onTriggered: root.overlayCollapsing = false
+    }
+
+    Timer {
+        id: dockHideTimer
+
+        interval: 550
+        repeat: false
+        onTriggered: {
+            if (root.autoHideRequired && !root.baseHovered
+                    && !root.overlayHovered && !root.edgeHovered
+                    && root.openMenuCount === 0
+                    && root.openPreviewCount === 0) {
+                root.closeOverlayAnimated();
+                root.revealedForMaximized = false;
+            }
+        }
+    }
+
+    Connections {
+        target: Qt.application
+
+        function onStateChanged(state) {
+            if (state !== Qt.ApplicationActive) {
+                root.closeTransientUi();
+            }
+        }
+    }
+
+    onAutoHideRequiredChanged: {
+        dockHideTimer.stop();
+        if (autoHideRequired) {
+            scheduleDockHide();
+        } else {
+            revealedForMaximized = false;
+        }
+    }
+
+    onFullscreenWindowPresentChanged: {
+        if (fullscreenWindowPresent) {
+            closeTransientUi();
+            overlayOpen = false;
+            revealedForMaximized = false;
+        }
+    }
+
+    onDockLocationChanged: {
+        lastPointerMain = overlayWindowMainLength / 2;
+        closeTransientUi();
+        overlayOpen = false;
+    }
+
+    onAppGroupsChanged: {
+        scheduleTaskLayoutRefresh();
+        updateActiveAppGroupPopup();
+    }
+
+    onHasDockContentChanged: {
+        if (!hasDockContent) {
+            closeTransientUi();
+            overlayOpen = false;
+            revealedForMaximized = false;
+        }
+    }
+
+    onDesktopCountChanged: {
+        desktopCreationPending = false;
+    }
+
+    onShowFolderViewChanged: {
+        if (!showFolderView) {
+            closeFolderPopup();
+        }
+    }
+
+    onShowTrashChanged: {
+        if (!showTrash) {
+            closeTransientUi();
+        }
+    }
+
+    readonly property string spotlightLauncherUrl: "applications:macosdock-spotlight.desktop"
+    readonly property string siriLauncherUrl: "applications:macosdock-siri.desktop"
+
+    // Ajoute ou retire les lanceurs Spotlight et Siri IA en UNE seule
+    // affectation de la liste (deux affectations successives pouvaient
+    // s'écraser l'une l'autre). À l'ajout ils sont placés en tête du Dock ;
+    // ensuite on les déplace comme n'importe quelle application.
+    property int toolSyncRetries: 0
+
+    function toolLaunchersWanted() {
+        var launchers = (tasksModel.launcherList || []).slice();
+        var changed = false;
+        var wanted = [
+            [siriLauncherUrl, showSiriButton],
+            [spotlightLauncherUrl, showSpotlightButton]
+        ];
+        for (var i = 0; i < wanted.length; ++i) {
+            var position = launchers.indexOf(wanted[i][0]);
+            if (wanted[i][1] && position === -1) {
+                launchers.unshift(wanted[i][0]);
+                changed = true;
+            } else if (!wanted[i][1] && position !== -1) {
+                launchers.splice(position, 1);
+                changed = true;
+            }
+        }
+        return changed ? launchers : null;
+    }
+
+    function syncToolLaunchers() {
+        if (!taskModelReady) {
+            return;
+        }
+        var launchers = toolLaunchersWanted();
+        if (launchers) {
+            tasksModel.launcherList = launchers;
+            // Plasma refuse en silence un lanceur qu'il ne connaît pas encore
+            // (index des applications pas à jour) : on revérifie un peu plus tard.
+            toolSyncRetries = 0;
+            toolLauncherCheck.restart();
+        }
+    }
+
+    // Au démarrage (et après ./install.sh qui remet les icônes par défaut) :
+    // réapplique les icônes personnalisées des lanceurs Spotlight / Siri IA.
+    Timer {
+        interval: 2000
+        running: true
+        repeat: false
+        onTriggered: {
+            spotlightBackend.applyToolIcon("spotlight", root.spotlightIconImage);
+            spotlightBackend.applyToolIcon("siri", root.siriIconImage);
+        }
+    }
+
+    Timer {
+        id: toolLauncherCheck
+
+        interval: 2500
+        repeat: false
+        onTriggered: {
+            var launchers = root.toolLaunchersWanted();
+            if (launchers && root.toolSyncRetries < 3) {
+                ++root.toolSyncRetries;
+                tasksModel.launcherList = launchers;
+                toolLauncherCheck.restart();
+            }
+        }
+    }
+
+    onShowSpotlightButtonChanged: syncToolLaunchers()
+    onShowSiriButtonChanged: {
+        syncToolLaunchers();
+        if (!showSiriButton) {
+            siriWindow.closeSiri();
+        }
+    }
+
+    // Icônes personnalisées (fichier local) des lanceurs Spotlight et Siri IA.
+    readonly property string spotlightIconImage:
+        String(Plasmoid.configuration.spotlightIconImage || "")
+    readonly property string siriIconImage:
+        String(Plasmoid.configuration.siriIconImage || "")
+    onSpotlightIconImageChanged: spotlightBackend.applyToolIcon("spotlight", spotlightIconImage)
+    onSiriIconImageChanged: spotlightBackend.applyToolIcon("siri", siriIconImage)
+
+    // Super / Alt+Espace / frappe sur le bureau : intégration du lanceur.
+    onSpotlightReplaceLauncherChanged:
+        spotlightBackend.applyLauncherIntegration(spotlightReplaceLauncher)
+
+    onShowPowerButtonChanged: {
+        if (!showPowerButton) {
+            closeTransientUi();
+        }
+    }
+
+    onPowerButtonPositionChanged: {
+        closeTransientUi();
+        lastPointerMain = overlayWindowMainLength / 2;
+        overlayOpen = false;
+    }
+
+    onConfiguredFolderUrlChanged: {
+        closeFolderPopup();
+        activeFolderUrl = configuredFolderUrl;
+        folderModel.url = String(configuredFolderUrl);
+    }
+
+    onOverlayHoveredChanged: {
+        if (folderPopup.visible && !folderPopup.hovered) {
+            if (overlayHovered) {
+                folderPopupCloseTimer.stop();
+            } else {
+                folderPopupCloseTimer.restart();
+            }
+        }
+        if (appGroupPopup.visible && !appGroupPopup.hovered) {
+            if (overlayHovered) {
+                appGroupPopupCloseTimer.stop();
+            } else {
+                appGroupPopupCloseTimer.restart();
+            }
+        }
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+
+        function onLaunchersChanged() {
+            if (root.taskModelReady
+                    && !root.sameStringList(tasksModel.launcherList,
+                        Plasmoid.configuration.launchers)) {
+                tasksModel.launcherList = Plasmoid.configuration.launchers || [];
+            }
+        }
+
+        function onFolderUrlsChanged() {
+            if (root.comparableFolderUrl(root.activeFolderUrl)
+                    === root.comparableFolderUrl(root.configuredFolderUrl)
+                    || root.containsFolderUrl(
+                        Plasmoid.configuration.folderUrls || [],
+                        root.activeFolderUrl)) {
+                return;
+            }
+            root.closeFolderPopup();
+            root.activeFolderUrl = root.configuredFolderUrl;
+            folderModel.url = String(root.configuredFolderUrl);
+        }
+    }
+
+    TaskManager.TasksModel {
+        id: tasksModel
+
+        sortMode: TaskManager.TasksModel.SortManual
+        groupMode: TaskManager.TasksModel.GroupApplications
+        separateLaunchers: true
+        launchInPlace: true
+        hideActivatedLaunchers: true
+        filterByVirtualDesktop: root.perDesktopDock
+        virtualDesktop: virtualDesktopInfo.currentDesktop
+        filterByScreen: false
+        filterByActivity: false
+
+        onLauncherListChanged: {
+            root.scheduleTaskLayoutRefresh();
+            if (root.taskModelReady
+                    && !root.sameStringList(launcherList,
+                        Plasmoid.configuration.launchers)) {
+                Plasmoid.configuration.launchers = launcherList;
+            }
+        }
+
+        onCountChanged: root.scheduleTaskLayoutRefresh()
+
+        Component.onCompleted: {
+            launcherList = Plasmoid.configuration.launchers || [];
+            root.taskModelReady = true;
+            // Première utilisation : Spotlight et Siri IA sont épinglés une fois.
+            // Si on les retire ensuite du Dock, ils ne reviennent pas tout seuls.
+            // (version 2 : corrige une première version qui pouvait oublier
+            // l'un des deux ; elle ne rajoute que ce qui manque.)
+            if (Plasmoid.configuration.toolLauncherSeedVersion < 2) {
+                Plasmoid.configuration.toolLauncherSeedVersion = 2;
+                root.syncToolLaunchers();
+            }
+            root.scheduleTaskLayoutRefresh();
+        }
+    }
+
+    Connections {
+        target: tasksModel
+
+        function onDataChanged(topLeft, bottomRight, roles) {
+            var identityChanged = !roles || roles.length === 0
+                || roles.indexOf(
+                    TaskManager.AbstractTasksModel.LauncherUrl) !== -1
+                || roles.indexOf(
+                    TaskManager.AbstractTasksModel
+                        .LauncherUrlWithoutIcon) !== -1
+                || roles.indexOf(
+                    TaskManager.AbstractTasksModel.AppId) !== -1;
+            if (identityChanged) {
+                root.scheduleTaskLayoutRefresh();
+            } else {
+                root.scheduleActiveAppGroupPopupRefresh();
+            }
+        }
+
+        function onModelReset() {
+            root.scheduleTaskLayoutRefresh();
+        }
+
+        function onRowsInserted() {
+            root.scheduleTaskLayoutRefresh();
+        }
+
+        function onRowsRemoved() {
+            root.scheduleTaskLayoutRefresh();
+        }
+
+        function onRowsMoved() {
+            root.scheduleTaskLayoutRefresh();
+        }
+
+        function onLayoutChanged() {
+            root.scheduleTaskLayoutRefresh();
+        }
+    }
+
+    Folder.FolderModel {
+        id: folderModel
+
+        url: String(root.configuredFolderUrl)
+        // Éventail façon macOS : le plus récent en premier, dossiers mêlés.
+        sortMode: 2
+        sortDesc: true
+        sortDirsFirst: false
+        parseDesktopFiles: true
+        // File thumbnails trigger asynchronous I/O and decoding for every
+        // visited directory. Theme icons keep this transient view responsive.
+        previews: false
+        applet: Plasmoid
+    }
+
+    DockEffects.OpenDocumentLocator {
+        id: openDocumentLocator
+    }
+
+    Folder.FolderModel {
+        id: trashModel
+
+        url: "trash:/"
+        sortMode: 0
+        sortDesc: false
+        sortDirsFirst: true
+        applet: Plasmoid
+
+        onListingCompleted: root.updateTrashCount()
+    }
+
+    Connections {
+        target: trashModel
+
+        function onRowsInserted() {
+            root.updateTrashCount();
+        }
+
+        function onRowsRemoved() {
+            root.updateTrashCount();
+        }
+
+        function onModelReset() {
+            root.updateTrashCount();
+        }
+    }
+
+    TaskManager.VirtualDesktopInfo {
+        id: virtualDesktopInfo
+    }
+
+    TaskManager.ActivityInfo {
+        id: activityInfo
+    }
+
+    TaskManager.TasksModel {
+        id: screenWindowsModel
+
+        groupMode: TaskManager.TasksModel.GroupDisabled
+        filterByCurrentVirtualDesktop: true
+        filterByActivity: true
+        activity: activityInfo.currentActivity
+        filterByScreen: true
+        screenGeometry: baseWindow.screen
+            ? Qt.rect(baseWindow.screen.virtualX,
+                baseWindow.screen.virtualY,
+                baseWindow.screen.width,
+                baseWindow.screen.height)
+            : Qt.rect(0, 0, 0, 0)
+        filterMinimized: true
+        filterHidden: true
+
+        onCountChanged: {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+        Component.onCompleted: {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+    }
+
+    Connections {
+        target: screenWindowsModel
+
+        function onDataChanged() {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+
+        function onModelReset() {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+
+        function onRowsInserted() {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+
+        function onRowsRemoved() {
+            root.scheduleScreenWindowStateUpdate();
+            root.scheduleBackdropUpdate();
+        }
+    }
+
+    // Entrée d'un menu contextuel du Dock. Le menu lui-même est un QMenu natif
+    // (voir DockMenu) : il est habillé par le style Qt de l'utilisateur et reçoit
+    // le flou / le Liquid Glass de KWin, comme le menu du clic droit du bureau.
+    // Une entrée qui contient d'autres entrées devient un sous-menu.
+    component MenuEntry: QtObject {
+        property string text
+        property string iconName
+        property bool enabled: true
+        property bool visible: true
+        default property list<QtObject> entries
+        signal triggered()
+    }
+
+    component MenuDivider: QtObject {
+        property bool visible: true
+    }
+
+    component TrackedMenu: QtObject {
+        id: trackedMenu
+
+        default property list<QtObject> entries
+        property bool countedAsOpen: false
+        property var entryLookup: ({})
+
+        readonly property DockEffects.DockMenu nativeMenu: DockEffects.DockMenu {
+            onTriggered: (entryId) => trackedMenu.activateEntry(entryId)
+            onOpened: trackedMenu.noteOpened()
+            onClosed: trackedMenu.noteClosed()
+        }
+
+        function buildItems(list, prefix) {
+            var result = [];
+            for (var i = 0; i < list.length; ++i) {
+                var entry = list[i];
+                if (!entry || entry.visible === false) {
+                    continue;
+                }
+                if (entry.text === undefined) {
+                    // Trait de séparation (jamais en tête, jamais doublé).
+                    if (result.length > 0
+                            && !result[result.length - 1].separator) {
+                        result.push({ "separator": true });
+                    }
+                    continue;
+                }
+                var entryId = prefix + i;
+                var item = {
+                    "id": entryId,
+                    "text": entry.text,
+                    "icon": entry.iconName,
+                    "enabled": entry.enabled,
+                    "separator": false
+                };
+                entryLookup[entryId] = entry;
+                var children = entry.entries
+                    ? buildItems(entry.entries, entryId + ".") : [];
+                if (children.length > 0) {
+                    item.children = children;
+                }
+                result.push(item);
+            }
+            if (result.length > 0 && result[result.length - 1].separator) {
+                result.pop();
+            }
+            return result;
+        }
+
+        // Ouvre le menu (coordonnées de la fenêtre). bubble = faux : à l'endroit
+        // du clic. bubble = vrai : bulle à pointe en « V » posée sur le bord de
+        // l'icône (sceneX/sceneY = ce point d'ancrage).
+        function popupAt(window, sceneX, sceneY, bubble) {
+            entryLookup = ({});
+            var items = buildItems(entries, "");
+            if (!window || items.length === 0) {
+                return;
+            }
+            if (!nativeMenu.available) {
+                console.warn("macOS Dock: native menus are unavailable");
+                return;
+            }
+            nativeMenu.popup(window, sceneX, sceneY,
+                root.menuPopupDirection, items, bubble === true);
+        }
+
+        function close() {
+            nativeMenu.close();
+        }
+
+        function activateEntry(entryId) {
+            var entry = entryLookup[entryId];
+            if (entry) {
+                entry.triggered();
+            }
+        }
+
+        function noteOpened() {
+            if (!countedAsOpen) {
+                countedAsOpen = true;
+                root.menuOpened(trackedMenu);
+            }
+        }
+
+        function noteClosed() {
+            if (countedAsOpen) {
+                countedAsOpen = false;
+                root.menuClosed(trackedMenu);
+            }
+        }
+
+        Component.onDestruction: {
+            nativeMenu.close();
+            if (countedAsOpen) {
+                root.menuClosed(trackedMenu);
+            }
+        }
+    }
+
+    component TaskDelegate: DockItem {
+        id: taskDelegate
+
+        required property int index
+        required property var model
+        property real displayScale: 1.0
+        property real displayCrossExtent: root.baseIconSize
+        readonly property string originalAppName:
+            String(model.AppName || model.display || i18n("Application"))
+        readonly property var originalAppIcon:
+            model.decoration || "application-x-executable"
+        readonly property string taskAppId: String(model.AppId || "")
+
+        readonly property bool launcherOnly: Boolean(model.IsLauncher)
+        readonly property bool runningTask: !launcherOnly
+            && (Boolean(model.IsWindow)
+                || Boolean(model.IsStartup)
+                || Boolean(model.IsGroupParent))
+        readonly property bool groupParent: Boolean(model.IsGroupParent)
+        readonly property int childCount: Number(model.ChildCount)
+        readonly property bool pinned: Boolean(model.HasLauncher)
+            || root.launcherExists(model)
+        readonly property string launcherTarget: root.launcherUrl(model)
+        readonly property bool canOpenNewInstance:
+            root.taskCanLaunchNewInstance(index,
+                Boolean(model.CanLaunchNewInstance), Number(model.ChildCount))
+        readonly property bool allMinimized: runningTask
+            && root.allTaskWindowsHaveState(index,
+                TaskManager.AbstractTasksModel.IsMinimized,
+                Boolean(model.IsMinimized), Number(model.ChildCount))
+        readonly property bool allMaximized: runningTask
+            && root.allTaskWindowsHaveState(index,
+                TaskManager.AbstractTasksModel.IsMaximized,
+                Boolean(model.IsMaximized), Number(model.ChildCount))
+        readonly property bool canMinimize: runningTask
+            && root.anyTaskWindowCan(index,
+                TaskManager.AbstractTasksModel.IsMinimizable,
+                Boolean(model.IsMinimizable), Number(model.ChildCount))
+        readonly property bool canMaximize: runningTask
+            && root.anyTaskWindowCan(index,
+                TaskManager.AbstractTasksModel.IsMaximizable,
+                Boolean(model.IsMaximizable), Number(model.ChildCount))
+        readonly property bool canClose: runningTask
+            && root.anyTaskWindowCan(index,
+                TaskManager.AbstractTasksModel.IsClosable,
+                Boolean(model.IsClosable), Number(model.ChildCount))
+        readonly property bool taskIsActive:
+            runningTask && Boolean(model.IsActive)
+        readonly property var appGroup:
+            root.appGroupForTask(index, launcherTarget, taskAppId)
+        readonly property bool appGroupMember: Boolean(appGroup)
+        readonly property bool appGroupLeader: appGroupMember
+            && root.isAppGroupLeaderTask(index, appGroup.id)
+        readonly property bool hiddenAppGroupMember:
+            appGroupMember && !appGroupLeader
+        readonly property var appGroupPreviewItems: {
+            void root.taskLayoutRevision;
+            return appGroupLeader
+                ? root.groupPreviewItems(appGroup) : [];
+        }
+
+        suppressTooltip: appGroupLeader
+            && (appGroupPopup.visible || root.appGroupPopupOpenPending)
+            && root.activeAppGroupId === appGroup.id
+        appName: appGroupLeader ? appGroup.name : originalAppName
+        appIcon: originalAppIcon
+        baseSize: root.baseIconSize
+        targetScale: displayScale
+        scaleResponse: root.magnificationSpring
+        scaleDamping: root.magnificationDamping
+        releasing: !root.overlayOpen
+        crossIconExtent: displayCrossExtent
+        isVertical: root.isVertical
+        location: root.dockLocation
+        screenEdgeMargin: root.panelEdgeMargin
+        isRunning: appGroupLeader
+            ? root.groupHasRuntimeState(appGroup, "running")
+            : runningTask
+        isActive: appGroupLeader
+            ? root.groupHasRuntimeState(appGroup, "active")
+            : taskIsActive
+        isStarting: Boolean(model.IsStartup)
+        launchAnimation: root.launchAnimation
+        clickBounceHeight: root.clickBounceHeight
+        launchBounceHeight: root.launchBounceHeight
+        isAppGroup: appGroupLeader
+        groupPreviewItems: appGroupPreviewItems
+        // Les icônes d'applications sont recentrées dans le fond du Dock : la
+        // place du voyant « ouvert » (en bas) les faisait paraître trop hautes.
+        // Dossier, corbeille, etc. ne changent pas.
+        iconCrossShift: root.indicatorSpace / 2
+        // Le voyant « ouvert » se place près du bord bas (ou haut, ou côté) du
+        // fond : distance entre le délégué et ce bord.
+        surfaceEdgeDistance: Math.max(0, root.crossMargin - root.surfaceInset)
+        useCustomIndicatorColor: !root.useThemeIndicatorColor
+        customIndicatorColor: root.customIndicatorColor
+        dragEnabled: !appGroupMember
+        enabled: !hiddenAppGroupMember
+        opacity: hiddenAppGroupMember ? 0 : 1
+        dropTarget: root.groupDropTargetIndex === index
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        readonly property var progressInfo: root.showProgressIndicators
+            ? (appGroupLeader
+                ? root.groupProgress(appGroup)
+                : progressController.getAppProgress(
+                    model.AppId || "",
+                    model.LauncherUrlWithoutIcon || model.LauncherUrl || ""))
+            : ({
+                visible: false,
+                progress: 0.0,
+                indeterminate: false,
+                completing: false
+            })
+
+        progressVisible: Boolean(progressInfo.visible)
+        progressValue: Number(progressInfo.progress)
+        progressIndeterminate: Boolean(progressInfo.indeterminate)
+        progressCompleting: Boolean(progressInfo.completing)
+
+        readonly property var recentShareInfo: {
+            // Establish the property dependency explicitly. The native lookup
+            // function itself cannot make a QML binding observe its data.
+            if (root.recentKdeConnectShares === undefined
+                    || taskDelegate.appGroupMember
+                    || !root.showKdeConnectRecentShares
+                    || !kdeConnectMonitor.active) {
+                return null;
+            }
+            return kdeConnectMonitor.getLatestShareForApp(
+                model.AppId || "",
+                model.LauncherUrlWithoutIcon || model.LauncherUrl || "");
+        }
+
+        hasRecentShare: Boolean(recentShareInfo && recentShareInfo.url)
+        recentShareDevice: recentShareInfo ? String(recentShareInfo.deviceName || "") : ""
+        recentShareUrl: recentShareInfo ? String(recentShareInfo.url || "") : ""
+        recentSharePreview: recentShareInfo ? String(recentShareInfo.preview || "") : ""
+        onRecentShareClicked: {
+            if (recentShareInfo && recentShareInfo.url) {
+                kdeConnectMonitor.openShareUrl(recentShareInfo.url);
+            }
+        }
+
+        Behavior on x {
+            enabled: (root.taskDragActive || root.reorderAnimationActive)
+                && !taskDelegate.isDragging
+            NumberAnimation {
+                duration: 145
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on y {
+            enabled: (root.taskDragActive || root.reorderAnimationActive)
+                && !taskDelegate.isDragging
+            NumberAnimation {
+                duration: 145
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        property bool previewCountedAsOpen: false
+        property bool geometryPublishPending: false
+
+        anyPreviewOpen: root.openPreviewCount > 0
+        previewAvailable: !appGroupMember && runningTask
+        windowsList: (!appGroupMember && runningTask
+                && (previewDataRequested || previewOpen))
+            ? root.windowsInfoForTask(index, childCount) : []
+
+        function publishGeometry() {
+            geometryPublishPending = false;
+            var owningWindow = taskDelegate.Window.window;
+            if (runningTask && owningWindow && owningWindow.visible) {
+                root.publishDelegateGeometry(index, taskDelegate, owningWindow);
+            }
+        }
+
+        function scheduleGeometryPublish() {
+            // Layer-shell visibility and delegate geometry can settle later in
+            // the same event cycle. Queue first, then let publishGeometry()
+            // select the delegate that is actually visible.
+            if (geometryPublishPending) {
+                return;
+            }
+            geometryPublishPending = true;
+            Qt.callLater(publishGeometry);
+        }
+
+        onXChanged: scheduleGeometryPublish()
+        onYChanged: scheduleGeometryPublish()
+        onWidthChanged: scheduleGeometryPublish()
+        onHeightChanged: scheduleGeometryPublish()
+        onDisplayScaleChanged: scheduleGeometryPublish()
+        onRunningTaskChanged: {
+            scheduleGeometryPublish();
+        }
+        onChildCountChanged: scheduleGeometryPublish()
+
+        // Rebond de démarrage : la fenêtre de base est exactement aussi haute
+        // que le fond du dock, elle coupe donc le haut du saut. Tant qu'une
+        // application démarre, on affiche la fenêtre agrandie (plus haute) à
+        // la place, comme quand le pointeur survole le dock.
+        property bool startupBounceCounted: false
+        readonly property bool startupBounceWanted: !inOverlay
+            && launchAnimation === 1 && isStarting
+        onStartupBounceWantedChanged: syncStartupBounceCount()
+        function syncStartupBounceCount() {
+            if (startupBounceWanted === startupBounceCounted) {
+                return;
+            }
+            startupBounceCounted = startupBounceWanted;
+            root.startupBounceCount += startupBounceWanted ? 1 : -1;
+        }
+
+        Component.onCompleted: {
+            scheduleGeometryPublish();
+            root.scheduleTaskLayoutRefresh();
+            syncStartupBounceCount();
+        }
+        Component.onDestruction: {
+            if (previewCountedAsOpen) {
+                previewCountedAsOpen = false;
+                root.previewClosed();
+            }
+            if (startupBounceCounted) {
+                startupBounceCounted = false;
+                root.startupBounceCount -= 1;
+            }
+        }
+
+        Connections {
+            target: taskDelegate.Window.window
+
+            function onVisibleChanged() {
+                taskDelegate.scheduleGeometryPublish();
+            }
+
+            function onXChanged() {
+                taskDelegate.scheduleGeometryPublish();
+            }
+
+            function onYChanged() {
+                taskDelegate.scheduleGeometryPublish();
+            }
+
+            function onScreenChanged() {
+                taskDelegate.scheduleGeometryPublish();
+            }
+        }
+
+        Connections {
+            target: root
+
+            function onDockRevealProgressChanged() {
+                taskDelegate.scheduleGeometryPublish();
+            }
+        }
+
+        onClicked: {
+            if (appGroupLeader) {
+                var popupParent = taskDelegate;
+                if (!inOverlay) {
+                    var overlayGroup = overlayRepeater.itemAt(index);
+                    if (overlayGroup) {
+                        popupParent = overlayGroup;
+                    }
+                }
+                root.toggleAppGroupPopup(appGroup.id, popupParent);
+            } else {
+                triggerBounce();
+                root.activateTask(index, launcherOnly);
+            }
+        }
+
+        onNewInstanceRequested: {
+            if (!appGroupMember) {
+                triggerBounce();
+                root.launchNewInstance(index);
+            }
+        }
+
+        // App-Gruppe beim Überfahren aufklappen, sobald eine Anwendung aus der
+        // Gruppe läuft. Der Zeiger muss kurz stehenbleiben, damit die Gruppe
+        // beim bloßen Entlangfahren am Dock nicht aufspringt.
+        onIconHoveredChanged: {
+            if (!taskDelegate.appGroupLeader || !taskDelegate.inOverlay) {
+                return;
+            }
+            if (taskDelegate.iconHovered) {
+                appGroupAutoOpenTimer.restart();
+            } else {
+                appGroupAutoOpenTimer.stop();
+            }
+            root.noteAppGroupItemHover(taskDelegate.appGroup.id,
+                taskDelegate.iconHovered);
+        }
+
+        Timer {
+            id: appGroupAutoOpenTimer
+
+            interval: 500
+            repeat: false
+            onTriggered: {
+                if (!taskDelegate.iconHovered || taskDelegate.isDragging
+                        || root.taskDragActive || root.openMenuCount > 0
+                        || !root.autoOpenAppGroupWithRunningApp
+                        || !taskDelegate.appGroupLeader
+                        || !root.appGroupHasRunningMember(
+                            taskDelegate.appGroup)) {
+                    return;
+                }
+                // Das Titel-Tooltip säße sonst zusätzlich über dem Symbol.
+                taskDelegate.setPreviewOpen(false);
+                root.autoOpenAppGroupPopup(taskDelegate.appGroup.id,
+                    taskDelegate);
+            }
+        }
+
+        onContextMenuRequested: (sceneX, sceneY) => {
+            if (appGroupLeader) {
+                appGroupMenu.popupAt(taskDelegate.Window.window,
+                    sceneX, sceneY, true);
+            } else {
+                taskMenu.popupAt(taskDelegate.Window.window,
+                    sceneX, sceneY, true);
+            }
+        }
+        onDragStarted: (sx, sy) => root.handleTaskDragStarted(taskDelegate, sx, sy)
+        onDragMoved: (sx, sy) => root.handleTaskDragMoved(taskDelegate, sx, sy)
+        onDragEnded: root.handleTaskDragEnded(taskDelegate)
+        onWindowActivated: (modelIdx) => {
+            if (modelIdx && modelIdx.valid) {
+                tasksModel.requestActivate(modelIdx);
+            }
+        }
+        onWindowClosed: (modelIdx) => {
+            if (modelIdx && modelIdx.valid) {
+                tasksModel.requestClose(modelIdx);
+            }
+        }
+        onPreviewVisibilityChanged: (visible) => {
+            if (visible && !previewCountedAsOpen) {
+                previewCountedAsOpen = true;
+                root.previewOpened();
+            } else if (!visible && previewCountedAsOpen) {
+                previewCountedAsOpen = false;
+                root.previewClosed();
+            }
+        }
+
+        // Même structure que le menu d'une icône sous macOS : « Options » (un
+        // sous-menu), un trait de séparation, puis « Ouvrir ».
+        TrackedMenu {
+            id: taskMenu
+
+            MenuEntry {
+                text: i18n("Options")
+
+                MenuEntry {
+                    text: taskDelegate.pinned
+                        ? i18n("Unpin from Dock") : i18n("Keep in Dock")
+                    enabled: taskDelegate.launcherTarget.length > 0
+                    onTriggered: root.scheduleLauncherToggle(
+                        taskDelegate.launcherTarget)
+                }
+
+                MenuEntry {
+                    text: i18n("Open New Window")
+                    visible: taskDelegate.canOpenNewInstance
+                    onTriggered: root.launchNewInstance(taskDelegate.index)
+                }
+
+                MenuEntry {
+                    text: i18n("Open Location")
+                    enabled: taskDelegate.launcherTarget.length > 0
+                    onTriggered: windowActions.showLauncherLocation(
+                        taskDelegate.launcherTarget)
+                }
+            }
+
+            MenuDivider {}
+
+            MenuEntry {
+                text: i18n("Open")
+                onTriggered: root.openTask(taskDelegate.index,
+                    taskDelegate.launcherOnly)
+            }
+
+            MenuEntry {
+                text: taskDelegate.hasRecentShare
+                    ? i18n("Open again from %1", taskDelegate.recentShareDevice)
+                    : ""
+                visible: taskDelegate.hasRecentShare && taskDelegate.recentShareUrl.length > 0
+                onTriggered: {
+                    if (taskDelegate.recentShareUrl.length > 0) {
+                        kdeConnectMonitor.openShareUrl(taskDelegate.recentShareUrl);
+                    }
+                }
+            }
+
+            // Fenêtres de l'application : seulement quand elle est lancée.
+            MenuDivider {
+                visible: taskDelegate.runningTask
+            }
+
+            MenuEntry {
+                text: taskDelegate.allMinimized
+                    ? (taskDelegate.groupParent
+                        ? i18n("Restore All") : i18n("Restore"))
+                    : (taskDelegate.groupParent
+                        ? i18n("Minimize All") : i18n("Minimize"))
+                visible: taskDelegate.runningTask
+                enabled: taskDelegate.canMinimize
+                onTriggered: root.setTaskMinimized(taskDelegate.index,
+                    !taskDelegate.allMinimized)
+            }
+
+            MenuEntry {
+                text: taskDelegate.allMaximized
+                    ? (taskDelegate.groupParent
+                        ? i18n("Restore All") : i18n("Restore"))
+                    : (taskDelegate.groupParent
+                        ? i18n("Maximize All") : i18n("Maximize"))
+                visible: taskDelegate.runningTask
+                enabled: taskDelegate.canMaximize
+                onTriggered: root.setTaskMaximized(taskDelegate.index,
+                    !taskDelegate.allMaximized)
+            }
+
+            MenuEntry {
+                text: taskDelegate.groupParent
+                    ? i18n("Close All Windows") : i18n("Close")
+                visible: taskDelegate.runningTask
+                enabled: taskDelegate.canClose
+                onTriggered: root.closeTask(taskDelegate.index)
+            }
+
+            MenuDivider {
+                visible: taskDelegate.runningTask
+            }
+
+            MenuEntry {
+                text: i18n("Force Quit Application…")
+                visible: taskDelegate.runningTask
+                enabled: windowActions.interactiveForceQuitAvailable
+                onTriggered: root.startInteractiveForceQuit()
+            }
+        }
+
+        TrackedMenu {
+            id: appGroupMenu
+
+            MenuEntry {
+                text: i18n("Open Group")
+                iconName: "folder-open"
+                onTriggered: root.toggleAppGroupPopup(
+                    taskDelegate.appGroup.id, taskDelegate)
+            }
+
+            MenuEntry {
+                text: i18n("Ungroup")
+                iconName: "edit-delete"
+                onTriggered: root.ungroupAppGroup(
+                    taskDelegate.appGroup.id)
+            }
+        }
+    }
+
+    component DesktopSwitcher: Item {
+        id: desktopSwitcher
+
+        readonly property real crossExtent: root.baseIconSize
+
+        width: root.isVertical
+            ? crossExtent : root.desktopSwitcherMainExtent
+        height: root.isVertical
+            ? root.desktopSwitcherMainExtent : crossExtent
+
+        Repeater {
+            model: root.desktopCount
+
+            delegate: Item {
+                id: desktopButton
+
+                required property int index
+
+                readonly property bool active:
+                    root.isDesktopActive(index)
+                readonly property string desktopName:
+                    root.desktopNameAt(index)
+                readonly property string label:
+                    root.desktopLabelAt(index)
+                readonly property real mainExtent:
+                    root.desktopButtonMainExtent(index)
+                readonly property real compactCrossExtent:
+                    root.desktopSwitcherLabelMode === 0
+                        ? Math.min(desktopSwitcher.crossExtent, 30)
+                        : desktopSwitcher.crossExtent
+
+                x: root.isVertical ? 0
+                    : root.desktopButtonMainStart(index)
+                y: root.isVertical
+                    ? root.desktopButtonMainStart(index) : 0
+                width: root.isVertical
+                    ? desktopSwitcher.crossExtent : mainExtent
+                height: root.isVertical
+                    ? mainExtent : desktopSwitcher.crossExtent
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: desktopName
+                Accessible.description: active
+                    ? i18n("Current desktop") : i18n("Switch desktop")
+                Accessible.onPressAction: root.activateDesktop(index)
+
+                Rectangle {
+                    id: desktopButtonSurface
+
+                    x: root.isVertical
+                        ? (parent.width - width) / 2 : 0
+                    y: root.isVertical
+                        ? 0 : (parent.height - height) / 2
+                    width: root.isVertical
+                        ? desktopButton.compactCrossExtent : parent.width
+                    height: root.isVertical
+                        ? parent.height : desktopButton.compactCrossExtent
+                    radius: Math.min(9, Math.min(width, height) / 2)
+                    color: {
+                        var reference = desktopButton.active
+                            ? Kirigami.Theme.highlightColor
+                            : Kirigami.Theme.alternateBackgroundColor;
+                        var alpha = desktopButton.active ? 0.9
+                            : (desktopButtonHover.hovered ? 0.72 : 0.48);
+                        return Qt.rgba(reference.r, reference.g,
+                            reference.b, alpha);
+                    }
+                    border.width: desktopButton.active ? 1 : 0
+                    border.color: Kirigami.Theme.highlightedTextColor
+
+                    Behavior on color {
+                        ColorAnimation { duration: 120 }
+                    }
+
+                    QQC2.Label {
+                        readonly property bool rotatedDesktopName:
+                            root.isVertical
+                                && root.desktopSwitcherLabelMode === 1
+
+                        anchors.centerIn: parent
+                        width: rotatedDesktopName
+                            ? Math.max(0, parent.height - 14)
+                            : Math.max(0, parent.width - 14)
+                        height: rotatedDesktopName
+                            ? parent.width : parent.height
+                        rotation: rotatedDesktopName
+                            ? (root.dockLocation
+                                === PlasmaCore.Types.LeftEdge ? -90 : 90)
+                            : 0
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        text: desktopButton.label
+                        color: desktopButton.active
+                            ? Kirigami.Theme.highlightedTextColor
+                            : Kirigami.Theme.textColor
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                }
+
+                HoverHandler {
+                    id: desktopButtonHover
+                    cursorShape: Qt.PointingHandCursor
+                }
+
+                TapHandler {
+                    onTapped: root.activateDesktop(desktopButton.index)
+                }
+
+                Keys.onReturnPressed:
+                    root.activateDesktop(desktopButton.index)
+                Keys.onEnterPressed:
+                    root.activateDesktop(desktopButton.index)
+                Keys.onSpacePressed:
+                    root.activateDesktop(desktopButton.index)
+
+                QQC2.ToolTip.visible: desktopButtonHover.hovered
+                QQC2.ToolTip.text: desktopButton.desktopName
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+            }
+        }
+
+        Item {
+            id: addDesktopButton
+
+            visible: root.desktopAddButtonVisible
+            x: root.isVertical ? 0
+                : root.desktopButtonMainStart(root.desktopCount)
+            y: root.isVertical
+                ? root.desktopButtonMainStart(root.desktopCount) : 0
+            width: root.isVertical
+                ? desktopSwitcher.crossExtent
+                : root.desktopAddButtonMainExtent
+            height: root.isVertical
+                ? root.desktopAddButtonMainExtent
+                : desktopSwitcher.crossExtent
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: i18n("Add desktop")
+            Accessible.onPressAction: root.createDesktop()
+
+            Rectangle {
+                x: root.isVertical ? (parent.width - width) / 2 : 0
+                y: root.isVertical ? 0 : (parent.height - height) / 2
+                width: root.isVertical
+                    ? Math.min(desktopSwitcher.crossExtent, 30)
+                    : parent.width
+                height: root.isVertical
+                    ? parent.height
+                    : Math.min(desktopSwitcher.crossExtent, 30)
+                radius: Math.min(9, Math.min(width, height) / 2)
+                color: {
+                    var reference = Kirigami.Theme.alternateBackgroundColor;
+                    var alpha = addDesktopHover.hovered ? 0.72 : 0.48;
+                    return Qt.rgba(reference.r, reference.g,
+                        reference.b, alpha);
+                }
+
+                Behavior on color {
+                    ColorAnimation { duration: 120 }
+                }
+
+                QQC2.Label {
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "+"
+                    color: Kirigami.Theme.textColor
+                    font.pixelSize: 20
+                    font.weight: Font.Medium
+                }
+            }
+
+            HoverHandler {
+                id: addDesktopHover
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            TapHandler {
+                onTapped: root.createDesktop()
+            }
+
+            Keys.onReturnPressed: root.createDesktop()
+            Keys.onEnterPressed: root.createDesktop()
+            Keys.onSpacePressed: root.createDesktop()
+
+            QQC2.ToolTip.visible: addDesktopHover.hovered
+            QQC2.ToolTip.text: i18n("Add desktop")
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+        }
+    }
+
+    component FolderDropTarget: DropArea {
+        id: folderDropTarget
+
+        property var excludedItems: []
+        property bool dragContainsFolder: false
+
+        function overExcludedItem(x, y) {
+            for (var index = 0; index < excludedItems.length; ++index) {
+                var item = excludedItems[index];
+                if (!item || !item.visible) {
+                    continue;
+                }
+                var topLeft = item.mapToItem(folderDropTarget, 0, 0);
+                if (x >= topLeft.x && x <= topLeft.x + item.width
+                        && y >= topLeft.y && y <= topLeft.y + item.height) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        onEntered: (drag) => {
+            dragContainsFolder = root.droppedUrlsContainFolder(drag.urls);
+            var accepted = !overExcludedItem(drag.x, drag.y)
+                && dragContainsFolder;
+            drag.accepted = accepted;
+            root.folderDropActive = accepted;
+            if (accepted) {
+                root.revealDock();
+                root.overlayOpen = true;
+                dockHideTimer.stop();
+            }
+        }
+        onPositionChanged: (drag) => {
+            var accepted = !overExcludedItem(drag.x, drag.y)
+                && dragContainsFolder;
+            drag.accepted = accepted;
+            root.folderDropActive = accepted;
+            if (accepted) {
+                root.revealDock();
+                dockHideTimer.stop();
+            }
+        }
+        onExited: {
+            dragContainsFolder = false;
+            root.folderDropActive = false;
+            root.scheduleOverlayClose();
+            root.scheduleDockHide();
+        }
+        onDropped: (drop) => {
+            var accepted = !overExcludedItem(drop.x, drop.y)
+                && root.addDroppedFolders(drop.urls);
+            root.folderDropActive = false;
+            dragContainsFolder = false;
+            if (accepted) {
+                drop.acceptProposedAction();
+            } else {
+                drop.accepted = false;
+            }
+        }
+    }
+
+    component AuxiliaryDelegate: DockItem {
+        required property int dockIndex
+        property real displayScale: 1.0
+        property real displayCrossExtent: root.baseIconSize
+        property bool previewCountedAsOpen: false
+
+        inOverlay: false
+        baseSize: root.baseIconSize
+        targetScale: displayScale
+        scaleResponse: root.magnificationSpring
+        scaleDamping: root.magnificationDamping
+        releasing: !root.overlayOpen
+        crossIconExtent: displayCrossExtent
+        isVertical: root.isVertical
+        location: root.dockLocation
+        screenEdgeMargin: root.panelEdgeMargin
+        launchAnimation: root.launchAnimation
+        clickBounceHeight: root.clickBounceHeight
+        launchBounceHeight: root.launchBounceHeight
+        dragEnabled: false
+        anyPreviewOpen: root.openPreviewCount > 0
+
+        onPreviewVisibilityChanged: (visible) => {
+            if (visible && !previewCountedAsOpen) {
+                previewCountedAsOpen = true;
+                root.previewOpened();
+            } else if (!visible && previewCountedAsOpen) {
+                previewCountedAsOpen = false;
+                root.previewClosed();
+            }
+        }
+
+        // Gegenstueck zur Erhoehung oben: Ordner- und Wechseldatentraeger-
+        // Delegates werden zur Laufzeit zerstoert (Ordner entfernt, Stick
+        // abgezogen). Ohne diesen Abzug bliebe openPreviewCount dauerhaft
+        // stehen und das Dock wuerde sich nie wieder automatisch verbergen.
+        Component.onDestruction: {
+            if (previewCountedAsOpen) {
+                previewCountedAsOpen = false;
+                root.previewClosed();
+            }
+        }
+    }
+
+    component UtilityDelegate: AuxiliaryDelegate {
+        id: utilityDelegate
+
+        required property string utilityType
+        property int folderIndex: -1
+        property url folderUrl: ""
+
+        readonly property bool isFolder: utilityType === "folder"
+        readonly property bool isTrash: utilityType === "trash"
+
+        readonly property var folderProgressInfo: (root.showProgressIndicators && isFolder)
+            ? progressController.getFolderProgress(folderUrl)
+            : ({
+                visible: false,
+                progress: 0.0,
+                indeterminate: false,
+                completing: false
+            })
+
+        readonly property var recentFolderShareInfo: {
+            if (root.recentKdeConnectShares === undefined
+                    || !root.showKdeConnectRecentShares
+                    || !kdeConnectMonitor.active
+                    || !utilityDelegate.isFolder) {
+                return null;
+            }
+            return kdeConnectMonitor.getLatestShareForFolder(
+                utilityDelegate.folderUrl);
+        }
+
+        progressVisible: Boolean(folderProgressInfo.visible)
+        progressValue: Number(folderProgressInfo.progress)
+        progressIndeterminate: Boolean(folderProgressInfo.indeterminate)
+        progressCompleting: Boolean(folderProgressInfo.completing)
+        hasRecentShare: Boolean(recentFolderShareInfo
+            && recentFolderShareInfo.url)
+        recentShareDevice: recentFolderShareInfo
+            ? String(recentFolderShareInfo.deviceName || "") : ""
+        recentShareUrl: recentFolderShareInfo
+            ? String(recentFolderShareInfo.url || "") : ""
+        recentSharePreview: recentFolderShareInfo
+            ? String(recentFolderShareInfo.preview || "") : ""
+        onRecentShareClicked: {
+            if (recentFolderShareInfo && recentFolderShareInfo.url) {
+                kdeConnectMonitor.openShareUrl(recentFolderShareInfo.url);
+            }
+        }
+
+        suppressTooltip: isFolder
+            && (folderPopup.visible || root.folderPopupOpenPending)
+            && root.comparableFolderUrl(root.activeFolderUrl)
+                === root.comparableFolderUrl(folderUrl)
+        appName: isFolder
+            ? root.folderName(folderUrl)
+            : (isTrash ? i18n("Trash") : "")
+        appIcon: {
+            if (isFolder) {
+                return root.folderIconName(folderUrl);
+            }
+            if (!isTrash) {
+                return "application-x-executable";
+            }
+            if (root.isVolumeDragOverTrash) {
+                return "media-eject";
+            }
+            // KIO exposes trash:/ as a folder on some Plasma versions.
+            // Resolve the canonical trash icon names through the active icon
+            // theme instead, while still reflecting the empty/full state.
+            return root.trashItemCount > 0
+                ? "user-trash-full" : "user-trash";
+        }
+        onClicked: {
+            if (isFolder) {
+                var popupParent = utilityDelegate;
+                if (!inOverlay) {
+                    var overlayFolder = folderOverlayRepeater.itemAt(folderIndex);
+                    if (overlayFolder) {
+                        popupParent = overlayFolder;
+                    }
+                }
+                root.toggleFolderPopup(folderUrl, popupParent);
+            } else if (isTrash) {
+                triggerBounce();
+                root.openTrashExternally();
+            }
+        }
+        onContextMenuRequested: (sceneX, sceneY) => utilityMenu.popupAt(
+            utilityDelegate.Window.window, sceneX, sceneY, true)
+
+        // Ordner beim Überfahren aufklappen, sobald ein laufendes Fenster eine
+        // Datei aus genau diesem Ordner nennt. Die Abfrage kostet ein
+        // Verzeichnislisting und läuft deshalb erst, wenn der Zeiger eine
+        // Weile stehengeblieben ist — nicht bei jeder Mausbewegung.
+        onIconHoveredChanged: {
+            if (!utilityDelegate.isFolder || !utilityDelegate.inOverlay) {
+                return;
+            }
+            if (utilityDelegate.iconHovered) {
+                folderAutoOpenTimer.restart();
+            } else {
+                folderAutoOpenTimer.stop();
+            }
+            root.noteFolderItemHover(utilityDelegate.folderUrl,
+                utilityDelegate.iconHovered);
+        }
+
+        Timer {
+            id: folderAutoOpenTimer
+
+            interval: 500
+            repeat: false
+            onTriggered: {
+                if (!utilityDelegate.iconHovered || utilityDelegate.isDragging
+                        || root.taskDragActive || root.openMenuCount > 0
+                        || !root.folderHasOpenDocument(
+                            utilityDelegate.folderUrl)) {
+                    return;
+                }
+                // Das Titel-Tooltip säße sonst zusätzlich über dem Symbol.
+                utilityDelegate.setPreviewOpen(false);
+                root.autoOpenFolderPopup(utilityDelegate.folderUrl,
+                    utilityDelegate);
+            }
+        }
+
+        DropArea {
+            anchors.fill: parent
+            enabled: utilityDelegate.isTrash
+
+            onEntered: (drag) => {
+                if (drag.keys && drag.keys.indexOf("org.kde.plasma.macosdock.removable-volume") !== -1) {
+                    root.isVolumeDragOverTrash = true;
+                }
+                utilityDelegate.dropTarget = true;
+            }
+            onExited: {
+                root.isVolumeDragOverTrash = false;
+                utilityDelegate.dropTarget = false;
+            }
+            onDropped: (drop) => {
+                root.isVolumeDragOverTrash = false;
+                utilityDelegate.dropTarget = false;
+                if (drop.keys && drop.keys.indexOf("org.kde.plasma.macosdock.removable-volume") !== -1) {
+                    var udi = drop.source
+                        ? String(drop.source.objectName || "") : "";
+                    if (udi) {
+                        removableVolumesModel.remove(udi);
+                        drop.acceptProposedAction();
+                    }
+                } else if (utilityDelegate.isTrash) {
+                    trashModel.drop(utilityDelegate, drop, -1, false);
+                }
+            }
+        }
+
+        TrackedMenu {
+            id: utilityMenu
+
+            MenuEntry {
+                text: utilityDelegate.isFolder
+                    ? i18n("Open Folder") : i18n("Open Trash")
+                iconName: utilityDelegate.isFolder
+                    ? "document-open-folder" : "user-trash"
+                onTriggered: {
+                    if (utilityDelegate.isFolder) {
+                        root.openFolderExternally(utilityDelegate.folderUrl);
+                    } else {
+                        root.openTrashExternally();
+                    }
+                }
+            }
+
+            MenuEntry {
+                text: utilityDelegate.hasRecentShare
+                    ? i18n("Open again from %1",
+                        utilityDelegate.recentShareDevice)
+                    : ""
+                iconName: "preferences-kde-connect"
+                visible: utilityDelegate.hasRecentShare
+                    && utilityDelegate.recentShareUrl.length > 0
+                onTriggered: kdeConnectMonitor.openShareUrl(
+                    utilityDelegate.recentShareUrl)
+            }
+
+            MenuEntry {
+                visible: utilityDelegate.isFolder
+                    && utilityDelegate.folderIndex > 0
+                text: i18n("Remove Folder from Dock")
+                iconName: "list-remove"
+                onTriggered: root.removeAdditionalFolder(
+                    utilityDelegate.folderUrl)
+            }
+
+            MenuEntry {
+                visible: utilityDelegate.isTrash
+                text: i18n("Empty Trash")
+                iconName: "trash-empty"
+                enabled: root.trashItemCount > 0
+                onTriggered: root.emptyTrash()
+            }
+        }
+    }
+
+    component PowerDelegate: AuxiliaryDelegate {
+        id: powerDelegate
+
+        appName: i18n("Power / Session")
+        appIcon: "system-shutdown"
+
+        onClicked: {
+            var anchor = powerDelegate.menuAnchorScene();
+            powerMenu.popupAt(powerDelegate.Window.window,
+                anchor.x, anchor.y, true);
+        }
+        onContextMenuRequested: (sceneX, sceneY) => powerMenu.popupAt(
+            powerDelegate.Window.window, sceneX, sceneY, true)
+
+        TrackedMenu {
+            id: powerMenu
+
+            MenuEntry {
+                text: i18n("Sleep / Standby")
+                iconName: "system-suspend"
+                enabled: sessionManagement.canSuspend
+                onTriggered: sessionManagement.suspend()
+            }
+
+            MenuEntry {
+                text: i18n("Restart…")
+                iconName: "system-reboot"
+                enabled: sessionManagement.canReboot
+                onTriggered: sessionManagement.requestReboot(
+                    Sessions.SessionManagement.ForcePrompt)
+            }
+
+            MenuEntry {
+                text: i18n("Shut Down…")
+                iconName: "system-shutdown"
+                enabled: sessionManagement.canShutdown
+                onTriggered: sessionManagement.requestShutdown(
+                    Sessions.SessionManagement.ForcePrompt)
+            }
+
+            MenuDivider {}
+
+            MenuEntry {
+                text: i18n("Lock Screen")
+                iconName: "system-lock-screen"
+                enabled: sessionManagement.canLock
+                onTriggered: sessionManagement.lock()
+            }
+
+            MenuEntry {
+                text: i18n("Log Out…")
+                iconName: "system-log-out"
+                enabled: sessionManagement.canLogout
+                onTriggered: sessionManagement.requestLogout(
+                    Sessions.SessionManagement.ForcePrompt)
+            }
+        }
+    }
+
+    component RemovableVolumeDelegate: AuxiliaryDelegate {
+        id: volumeDelegate
+
+        required property string volumeUdi
+        required property string volumeDisplayName
+        required property string volumeIconName
+        required property bool volumeMounted
+        required property bool volumeBusy
+        required property string volumeOperation
+        required property string volumeKind
+        required property bool volumeCanOpen
+        required property bool volumeCanRemove
+        required property string volumeErrorText
+
+        appName: volumeDisplayName
+        appIcon: volumeIconName.length > 0 ? volumeIconName : "drive-removable-media"
+
+        opacity: volumeMounted ? 1.0 : 0.25
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+        }
+
+        progressVisible: volumeBusy
+        progressIndeterminate: volumeBusy
+
+        onClicked: {
+            if (volumeBusy) {
+                return;
+            }
+            triggerBounce();
+            // open() handles mount-if-needed internally
+            removableVolumesModel.open(volumeUdi);
+        }
+        onContextMenuRequested: (sceneX, sceneY) => volumeMenu.popupAt(
+            volumeDelegate.Window.window, sceneX, sceneY, true)
+
+        onVolumeErrorTextChanged: {
+            if (volumeErrorText.length > 0) {
+                errorToolTip.show(volumeErrorText, 5000);
+            }
+        }
+
+        QQC2.ToolTip {
+            id: errorToolTip
+            timeout: 5000
+        }
+
+        Item {
+            id: dragProxy
+            objectName: volumeDelegate.volumeUdi
+            width: volumeDelegate.width
+            height: volumeDelegate.height
+            Drag.hotSpot: Qt.point(width / 2, height / 2)
+            Drag.keys: ["org.kde.plasma.macosdock.removable-volume"]
+            Drag.proposedAction: Qt.MoveAction
+            Drag.source: dragProxy
+            Drag.supportedActions: Qt.MoveAction
+        }
+
+        DragHandler {
+            id: volumeDragHandler
+            enabled: volumeDelegate.volumeMounted
+                && volumeDelegate.volumeCanRemove
+                && !volumeDelegate.volumeBusy
+            target: dragProxy
+            onActiveChanged: {
+                if (active) {
+                    dragProxy.Drag.start(Qt.MoveAction);
+                } else {
+                    dragProxy.Drag.drop();
+                    dragProxy.x = 0;
+                    dragProxy.y = 0;
+                }
+            }
+        }
+
+        TrackedMenu {
+            id: volumeMenu
+
+            MenuEntry {
+                // Ist die Tab-Option aus, oeffnet die Standardaktion im
+                // eingestellten Dateimanager — dann darf hier auch nicht
+                // „In neuem Fenster" stehen, das waere eine Dolphin-Zusage,
+                // die die Standardaktion nicht einloest.
+                text: volumeDelegate.volumeMounted
+                    ? (root.openRemovableVolumesInNewTab
+                        ? i18n("Open in New Tab")
+                        : i18n("Open Volume"))
+                    : (volumeDelegate.volumeOperation === "mounting"
+                        ? i18n("Mounting…")
+                        : i18n("Mount Volume"))
+                iconName: volumeDelegate.volumeMounted
+                    ? (root.openRemovableVolumesInNewTab
+                        ? "tab-new"
+                        : "document-open-folder")
+                    : "media-mount"
+                enabled: !volumeDelegate.volumeBusy
+                onTriggered: removableVolumesModel.open(volumeDelegate.volumeUdi)
+            }
+
+            MenuEntry {
+                text: root.openRemovableVolumesInNewTab
+                    ? i18n("Open in New Window")
+                    : i18n("Open in New Tab")
+                iconName: root.openRemovableVolumesInNewTab
+                    ? "window-new"
+                    : "tab-new"
+                visible: volumeDelegate.volumeMounted
+                enabled: volumeDelegate.volumeMounted && !volumeDelegate.volumeBusy
+                onTriggered: removableVolumesModel.open(volumeDelegate.volumeUdi, !root.openRemovableVolumesInNewTab)
+            }
+
+            MenuEntry {
+                text: volumeDelegate.volumeOperation === "ejecting"
+                    ? i18n("Ejecting…")
+                    : (volumeDelegate.volumeOperation === "unmounting"
+                        ? i18n("Unmounting…")
+                        : (volumeDelegate.volumeKind === "optical"
+                            ? i18n("Eject Disc")
+                            : i18n("Unmount Volume")))
+                iconName: "media-eject"
+                enabled: volumeDelegate.volumeMounted
+                    && volumeDelegate.volumeCanRemove
+                    && !volumeDelegate.volumeBusy
+                onTriggered: removableVolumesModel.remove(volumeDelegate.volumeUdi)
+            }
+        }
+    }
+
+    fullRepresentation: Item {
+        id: hostAnchor
+
+        Layout.minimumWidth: 1
+        Layout.minimumHeight: 1
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 1
+        Layout.maximumWidth: 1
+        Layout.maximumHeight: 1
+        Layout.fillWidth: false
+        Layout.fillHeight: false
+
+        width: 1
+        height: 1
+        implicitWidth: 1
+        implicitHeight: 1
+        visible: false
+
+        Component.onCompleted: root.representationItem = hostAnchor
+        Component.onDestruction: {
+            if (root.representationItem === hostAnchor) {
+                root.representationItem = null;
+            }
+        }
+    }
+
+    FolderPopup {
+        id: folderPopup
+
+        folderModel: folderModel
+        rootFolderUrl: root.activeFolderUrl
+        location: root.dockLocation
+        screenEdgeMargin: root.panelEdgeMargin
+        surfaceOpacity: Math.min(0.94, root.backgroundOpacity + 0.18)
+        useThemeColor: root.useThemeBackground
+        customColor: root.customBackgroundColor
+        requestedRadius: Math.max(16, root.cornerRadius)
+        borderOpacity: root.borderOpacity
+        shadowOpacity: root.shadowOpacity
+        showHighlight: root.showHighlight
+        highlightStrength: root.highlightStrength
+        borderStrength: root.borderStrength
+        hoverScale: root.folderHoverScale
+
+        onOpenFolderRequested: (folderUrl) =>
+            Folder.AppLauncher.openUrl(folderUrl)
+
+        onVisibleChanged: {
+            if (visible && !root.folderPopupCountedAsOpen) {
+                root.folderPopupCountedAsOpen = true;
+                root.previewOpened();
+            } else if (!visible && root.folderPopupCountedAsOpen) {
+                root.folderPopupCountedAsOpen = false;
+                root.previewClosed();
+                folderModel.url = String(root.activeFolderUrl);
+            }
+        }
+
+        onHoveredChanged: {
+            if (hovered) {
+                folderPopupCloseTimer.stop();
+            } else {
+                folderPopupCloseTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: folderPopupCloseTimer
+
+        interval: 380
+        repeat: false
+        onTriggered: {
+            if (!folderPopup.visible || folderPopup.hovered) {
+                return;
+            }
+            if (root.folderPopupAutoOpened) {
+                if (!root.autoOpenedFolderHovered) {
+                    root.closeFolderPopup();
+                }
+                return;
+            }
+            if (!root.overlayHovered) {
+                folderPopup.dismiss(false);
+            }
+        }
+    }
+
+    AppGroupPopup {
+        id: appGroupPopup
+
+        location: root.dockLocation
+        screenEdgeMargin: root.panelEdgeMargin
+        surfaceOpacity: Math.min(0.94, root.backgroundOpacity + 0.2)
+        useThemeColor: root.useThemeBackground
+        customColor: root.customBackgroundColor
+        requestedRadius: Math.max(17, root.cornerRadius)
+        borderOpacity: root.borderOpacity
+        shadowOpacity: root.shadowOpacity
+        showHighlight: root.showHighlight
+        highlightStrength: root.highlightStrength
+        borderStrength: root.borderStrength
+        borderWidth: root.borderWidth
+        openDuration: root.appGroupPopupDuration
+        openOvershoot: root.appGroupPopupOvershoot
+        viewMode: root.appGroupViewMode
+
+        onMemberActivated: (launcherUrl) => {
+            root.closeAppGroupPopup();
+            root.activateGroupMember(launcherUrl);
+        }
+        onMemberNewInstanceRequested: (launcherUrl) => {
+            root.closeAppGroupPopup();
+            root.launchGroupMemberNewInstance(launcherUrl);
+        }
+        onMemberWindowActivated: (windowIndex) => {
+            root.closeAppGroupPopup();
+            root.activateGroupWindow(windowIndex);
+        }
+        onMemberWindowClosed: (windowIndex) =>
+            root.closeGroupWindow(windowIndex)
+        onMemberRemoved: (launcherUrl) =>
+            root.removeAppFromGroup(groupId, launcherUrl)
+        onGroupNameRequested: (name) =>
+            root.renameAppGroup(groupId, name)
+        onUngroupRequested: root.ungroupAppGroup(groupId)
+
+        onVisibleChanged: {
+            if (visible && !root.appGroupPopupCountedAsOpen) {
+                root.appGroupPopupCountedAsOpen = true;
+                root.previewOpened();
+            } else if (!visible
+                    && root.appGroupPopupCountedAsOpen) {
+                root.appGroupPopupCountedAsOpen = false;
+                root.previewClosed();
+            }
+        }
+
+        onHoveredChanged: {
+            if (hovered) {
+                appGroupPopupCloseTimer.stop();
+            } else {
+                appGroupPopupCloseTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: appGroupPopupCloseTimer
+
+        interval: 480
+        repeat: false
+        onTriggered: {
+            if (!appGroupPopup.visible || appGroupPopup.hovered) {
+                return;
+            }
+            if (root.appGroupPopupAutoOpened) {
+                if (!root.autoOpenedAppGroupHovered) {
+                    root.closeAppGroupPopup();
+                }
+                return;
+            }
+            if (!root.overlayHovered) {
+                appGroupPopup.hidePopup();
+            }
+        }
+    }
+
+    Window {
+        id: baseWindow
+
+        objectName: "macOSDockBase"
+        title: "macOS Dock"
+        width: root.baseWindowWidth
+        height: root.baseWindowHeight
+        flags: Qt.WindowDoesNotAcceptFocus | Qt.FramelessWindowHint
+        color: "transparent"
+        // Reste affichée sous la fenêtre agrandie : ses captures continuent de
+        // tourner, et le verre du Dock est déjà prêt quand on revient à elle
+        // (et, dans l'autre sens, elle garde son fond le temps que le verre de
+        // la fenêtre agrandie démarre).
+        visible: root.dockWindowVisible
+
+        LayerShell.Window.scope: "macosdock-base"
+        LayerShell.Window.anchors: {
+            if (root.dockLocation === PlasmaCore.Types.TopEdge) {
+                return LayerShell.Window.AnchorTop;
+            }
+            if (root.dockLocation === PlasmaCore.Types.LeftEdge) {
+                return LayerShell.Window.AnchorLeft;
+            }
+            if (root.dockLocation === PlasmaCore.Types.RightEdge) {
+                return LayerShell.Window.AnchorRight;
+            }
+            return LayerShell.Window.AnchorBottom;
+        }
+        LayerShell.Window.margins.left: root.panelEdgeMargin
+        LayerShell.Window.margins.top: root.panelEdgeMargin
+        LayerShell.Window.margins.right: root.panelEdgeMargin
+        LayerShell.Window.margins.bottom: root.panelEdgeMargin
+        LayerShell.Window.exclusionZone: -1
+        // A Dock belongs above regular windows, but below true fullscreen
+        // surfaces. LayerOverlay is reserved for OSD-style UI and otherwise
+        // forces the Dock over fullscreen video in mpv and Dragon Player.
+        LayerShell.Window.layer: LayerShell.Window.LayerTop
+        LayerShell.Window.keyboardInteractivity:
+            LayerShell.Window.KeyboardInteractivityNone
+        LayerShell.Window.activateOnShow: false
+        LayerShell.Window.wantsToBeOnActiveScreen: true
+
+        onVisibleChanged: {
+            if (!visible) {
+                root.baseHovered = false;
+            }
+            root.republishTaskGeometry();
+            geometryRepublishTimer.restart();
+        }
+
+        Item {
+            anchors.fill: parent
+            transform: Translate {
+                x: root.dockSlideX(baseWindow.width)
+                y: root.dockSlideY(baseWindow.height)
+            }
+
+            DockBackground {
+                id: baseSurface
+
+                anchors.fill: parent
+                anchors.margins: root.surfaceInset
+                borderStrength: root.borderStrength
+                borderWidth: root.borderWidth
+                colorFromWallpaper: root.borderColorFromWallpaper
+                lightIntensity: root.borderLightIntensity
+                glassEnabled: root.glassEnabled
+                backdropWindows: root.backdropWindows
+                liveBackdrop: root.liveBackdrop
+                glassBlur: root.glassBlurRadius
+                glassRefraction: root.liquidGlass
+                glassThickness: root.glassThickness
+                glassStrength: root.glassStrength
+                glassDispersion: root.glassDispersion
+                glassProfile: root.glassProfile
+                glassRim: root.glassRim
+                // Effacé (mais toujours dessiné) dès que le fond de la fenêtre
+                // agrandie est prêt à le remplacer.
+                externalOpacity: root.overlayVisible
+                    && overlayBackgroundSurface.glassHandoffReady ? 0.01 : 1.0
+                // En attendant, la fenêtre agrandie dessine déjà la teinte et
+                // la bordure ; ce fond-ci ne montre plus que son verre.
+                coveredByOverlay: root.overlayCovering
+                wallpaperInfo: root.wallpaperInfo
+                colorSampler: wallpaperLocator
+                backdropOrigin: Qt.point(
+                    root.dockWindowOrigin(baseWindow).x + baseSurface.x,
+                    root.dockWindowOrigin(baseWindow).y + baseSurface.y)
+                surfaceOpacity: root.backgroundOpacity
+                useThemeColor: root.useThemeBackground
+                customColor: root.customBackgroundColor
+                requestedRadius: root.cornerRadius
+                borderOpacity: root.borderOpacity
+                shadowOpacity: root.shadowOpacity
+                showHighlight: root.showHighlight
+                highlightStrength: root.highlightStrength
+                showShadow: false
+            }
+
+            // Les icônes de la fenêtre de base : cachées dès que la fenêtre
+            // agrandie les remplace.
+            Item {
+                id: baseContentLayer
+
+                anchors.fill: parent
+                opacity: root.overlayVisible ? 0.0 : 1.0
+
+                FolderDropTarget {
+                    anchors.fill: parent
+                    z: 1
+                    excludedItems: [trashBaseItem, powerBaseItem]
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: root.surfaceInset
+                    z: 9998
+                    visible: root.folderDropActive
+                    color: "transparent"
+                    radius: root.cornerRadius
+                    border.width: 2
+                    border.color: Kirigami.Theme.highlightColor
+                }
+
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+
+                    onPointChanged: {
+                        if (hovered) {
+                            var coordinate = root.isVertical
+                                ? point.position.y : point.position.x;
+                            root.notePointer((root.overlayWindowMainLength
+                                - root.baseWindowMainLength) / 2 + coordinate,
+                                root.pointerX, root.pointerY);
+                        }
+                    }
+
+                    onHoveredChanged: {
+                        root.baseHovered = hovered;
+                        if (hovered) {
+                            root.revealDock();
+                            var coordinate = root.isVertical
+                                ? point.position.y : point.position.x;
+                            root.notePointer((root.overlayWindowMainLength
+                                - root.baseWindowMainLength) / 2 + coordinate,
+                                root.pointerX, root.pointerY);
+                            overlayCloseTimer.stop();
+                            // Ferme d'abord un éventuel menu étranger (clic
+                            // droit sur le bureau), puis ouvre l'agrandissement.
+                            root.requestOverlayOpen();
+                        } else {
+                            root.scheduleOverlayClose();
+                            root.scheduleDockHide();
+                            root.noteZoomSuppressCheck();
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: root.systemSectionBreakAfterDockIndices
+
+                    delegate: Rectangle {
+                        required property int modelData
+
+                        color: Kirigami.Theme.textColor
+                        opacity: 0.24
+                        radius: 1
+                        width: root.isVertical
+                            ? root.baseIconSize * 0.62 : 1
+                        height: root.isVertical
+                            ? 1 : root.baseIconSize * 0.62
+                        x: root.isVertical
+                            ? root.baseIconCrossCenter() - width / 2
+                            : root.baseSeparatorPositionAfter(modelData)
+                                - width / 2
+                        y: root.isVertical
+                            ? root.baseSeparatorPositionAfter(modelData)
+                                - height / 2
+                            : root.baseIconCrossCenter() - height / 2
+                    }
+                }
+
+                Repeater {
+                    model: root.userSeparatorVisualSlots.length
+
+                    delegate: Rectangle {
+                        id: baseUserSeparator
+
+                        required property int index
+                        readonly property real slot:
+                            root.userSeparatorVisualSlots[index] === undefined
+                                ? -1 : root.userSeparatorVisualSlots[index]
+
+                        visible: slot >= 0
+                        color: Kirigami.Theme.textColor
+                        opacity: 0.24
+                        radius: 1
+                        width: root.isVertical
+                            ? root.baseIconSize * 0.62 : 1
+                        height: root.isVertical
+                            ? 1 : root.baseIconSize * 0.62
+                        x: root.isVertical
+                            ? root.baseIconCrossCenter() - width / 2
+                            : root.baseSeparatorPositionAfter(
+                                root.taskDockStartIndex + slot) - width / 2
+                        y: root.isVertical
+                            ? root.baseSeparatorPositionAfter(
+                                root.taskDockStartIndex + slot) - height / 2
+                            : root.baseIconCrossCenter() - height / 2
+                    }
+                }
+
+                Rectangle {
+                    visible: root.desktopSwitcherVisible
+                        && root.dockItemCount > 0
+                    color: Kirigami.Theme.textColor
+                    opacity: 0.24
+                    radius: 1
+                    width: root.isVertical
+                        ? root.baseIconSize * 0.62 : 1
+                    height: root.isVertical
+                        ? 1 : root.baseIconSize * 0.62
+                    x: root.isVertical
+                        ? root.baseIconCrossCenter() - width / 2
+                        : root.baseDesktopSeparatorPosition() - width / 2
+                    y: root.isVertical
+                        ? root.baseDesktopSeparatorPosition() - height / 2
+                        : root.baseIconCrossCenter() - height / 2
+                }
+
+                DesktopSwitcher {
+                    visible: root.desktopSwitcherVisible
+                    x: root.isVertical ? root.crossMargin
+                        : root.baseDesktopSwitcherStart()
+                    y: root.isVertical
+                        ? root.baseDesktopSwitcherStart() : root.crossMargin
+                }
+
+                Repeater {
+                    id: baseRepeater
+
+                    model: tasksModel
+
+                    delegate: TaskDelegate {
+                        displayScale: 1.0
+                        displayCrossExtent: root.baseIconSize
+                        x: root.isVertical ? root.crossMargin
+                            : root.baseCenterForIndex(
+                                root.taskDockStartIndex
+                                    + root.visualIndexForModelIndex(index))
+                                - scaledSize / 2
+                        y: root.isVertical
+                            ? root.baseCenterForIndex(
+                                root.taskDockStartIndex
+                                    + root.visualIndexForModelIndex(index))
+                                - scaledSize / 2
+                            : root.crossMargin
+                    }
+                }
+
+                Repeater {
+                    model: root.folderItemCount
+
+                    delegate: UtilityDelegate {
+                        required property int index
+
+                        folderIndex: index
+                        folderUrl: root.folderUrlAt(index)
+                        dockIndex: root.folderDockIndex + index
+                        utilityType: "folder"
+                        x: root.isVertical ? root.crossMargin
+                            : root.baseCenterForIndex(dockIndex)
+                                - scaledSize / 2
+                        y: root.isVertical
+                            ? root.baseCenterForIndex(dockIndex)
+                                - scaledSize / 2
+                            : root.crossMargin
+                    }
+                }
+
+                Repeater {
+                    model: root.showRemovableVolumes ? removableVolumesModel : 0
+
+                    delegate: RemovableVolumeDelegate {
+                        required property int index
+                        required property string udi
+                        required property string displayName
+                        required property string iconName
+                        required property string kind
+                        required property string errorText
+                        required property bool canOpen
+                        required property bool canRemove
+                        required property bool mounted
+                        required property bool busy
+                        required property string operation
+
+                        volumeUdi: udi
+                        volumeDisplayName: displayName
+                        volumeIconName: iconName
+                        volumeKind: kind
+                        volumeCanOpen: canOpen
+                        volumeCanRemove: canRemove
+                        volumeErrorText: errorText
+                        volumeMounted: mounted
+                        volumeBusy: busy
+                        volumeOperation: operation
+
+                        dockIndex: root.removableVolumeDockStartIndex + index
+                        x: root.isVertical ? root.crossMargin
+                            : root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                        y: root.isVertical
+                            ? root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                            : root.crossMargin
+                    }
+                }
+
+                UtilityDelegate {
+                    id: trashBaseItem
+
+                    visible: root.showTrash
+                    dockIndex: root.trashDockIndex
+                    utilityType: "trash"
+                    x: root.isVertical ? root.crossMargin
+                        : root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                    y: root.isVertical
+                        ? root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                        : root.crossMargin
+                }
+
+                PowerDelegate {
+                    id: powerBaseItem
+
+                    visible: root.showPowerButton
+                    dockIndex: root.powerButtonDockIndex
+                    x: root.isVertical ? root.crossMargin
+                        : root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                    y: root.isVertical
+                        ? root.baseCenterForIndex(dockIndex) - scaledSize / 2
+                        : root.crossMargin
+                }
+            }
+        }
+    }
+
+    // --- Spotlight, assistant IA et Siri IA ---------------------------------------
+    DockEffects.SpotlightBackend {
+        id: spotlightBackend
+
+        replaceLauncher: root.spotlightReplaceLauncher
+
+        onAssistantRequested: siriWindow.openSiri(false)
+        onScreenshotRequested: {
+            spotlightWindow.closeSpotlight();
+            screenshotWindow.start();
+        }
+    }
+
+    // Prompts de l'onglet « Prompts » : chaque entrée est un JSON
+    // { icon, image, title, text }. Les entrées illisibles ou sans texte sont
+    // ignorées.
+    readonly property var aiPrompts: {
+        var raw = Plasmoid.configuration.aiPrompts || [];
+        var list = [];
+        for (var i = 0; i < raw.length; ++i) {
+            try {
+                var item = JSON.parse(String(raw[i]));
+                if (item && String(item.text || "").length > 0) {
+                    list.push({ "icon": String(item.icon || ""),
+                        "image": String(item.image || ""),
+                        "title": String(item.title || ""),
+                        "text": String(item.text) });
+                }
+            } catch (error) {
+                continue;
+            }
+        }
+        return list;
+    }
+
+    // Les identifiants viennent uniquement de la configuration locale de Plasma
+    // (~/.config) : ils ne sont jamais écrits dans le dépôt Git.
+    AiChat {
+        id: aiChat
+
+        backend: spotlightBackend
+        defaultProvider: Math.round(root.boundedNumber(
+            Plasmoid.configuration.aiProvider, 0, 0, 2))
+        geminiKey: String(Plasmoid.configuration.geminiApiKey || "")
+        geminiModel: String(Plasmoid.configuration.geminiModel || "gemini-3.8-flash")
+        geminiWebSearch: Plasmoid.configuration.geminiWebSearch === undefined
+            ? true : Boolean(Plasmoid.configuration.geminiWebSearch)
+        glmBackend: Math.round(root.boundedNumber(
+            Plasmoid.configuration.glmBackend, 0, 0, 1))
+        glmModel: String(Plasmoid.configuration.glmModel || "glm-5.3-flash-free")
+        glmKey: String(Plasmoid.configuration.glmApiKey || "")
+        glmBaseUrl: String(Plasmoid.configuration.glmBaseUrl
+            || "https://opencode.ai/inference/openai/v1")
+        customName: String(Plasmoid.configuration.customAiName || "")
+        customUrl: String(Plasmoid.configuration.customAiUrl || "")
+        customKey: String(Plasmoid.configuration.customAiKey || "")
+        customModel: String(Plasmoid.configuration.customAiModel || "")
+
+        onProviderChosen: (index) => {
+            Plasmoid.configuration.aiProvider = index;
+        }
+
+        // Modèle Gemini choisi dans Siri IA : il est mémorisé dans les réglages.
+        onGeminiModelChosen: (model) => {
+            Plasmoid.configuration.geminiModel = model;
+        }
+    }
+
+    SpotlightWindow {
+        id: spotlightWindow
+
+        backend: spotlightBackend
+        chat: aiChat
+        prompts: root.aiPrompts
+        favorites: Plasmoid.configuration.spotlightFavorites || []
+        wallpaperInfo: root.wallpaperInfo
+        colorSampler: wallpaperLocator
+        backdropWindows: root.backdropWindows
+        liveBackdrop: root.spotlightLiveBackdrop
+        glassTint: root.spotlightGlassTint
+        glassDarken: root.spotlightGlassDarken
+        borderStrength: root.spotlightBorderStrength
+        borderWidth: root.spotlightBorderWidth
+        menuBlurPx: root.spotlightMenuBlur
+        menuThickness: root.spotlightMenuThickness
+        menuRefraction: root.spotlightMenuRefraction
+        menuIor: root.spotlightMenuIor
+        menuChroma: root.spotlightMenuChroma
+        menuSpec: root.spotlightMenuSpec
+        assistantEnabled: root.showSiriButton
+
+        onFavoritesChangeRequested: (ids) => {
+            Plasmoid.configuration.spotlightFavorites = ids;
+        }
+        onAssistantRequested: (freshConversation) => {
+            siriWindow.openSiri(freshConversation);
+        }
+        onScreenshotRequested: screenshotWindow.start()
+        onSettingsRequested: Plasmoid.internalAction("configure").trigger()
+    }
+
+    // Capture d'écran « Demander à Siri » : la zone choisie s'ouvre dans la
+    // fenêtre de conversation du Spotlight.
+    ScreenshotWindow {
+        id: screenshotWindow
+
+        backend: spotlightBackend
+
+        onImageReady: (path) => {
+            spotlightWindow.openWithImage(path);
+        }
+    }
+
+    SiriWindow {
+        id: siriWindow
+
+        backend: spotlightBackend
+        chat: aiChat
+        prompts: root.aiPrompts
+
+        onSettingsRequested: Plasmoid.internalAction("configure").trigger()
+    }
+
+    Window {
+        id: edgeWindow
+
+        objectName: "macOSDockEdge"
+        title: "macOS Dock Edge"
+        // Quand le Dock est affiché alors qu'il devrait être masqué (réaffiché
+        // par le pointeur), la bande entre le bord de l'écran et le Dock reste
+        // couverte par cette fenêtre : sans elle, le pointeur placé dans cette
+        // bande ne touche ni le Dock ni le bord, le Dock se remasque, la bande
+        // de déclenchement revient, le Dock se réaffiche… en boucle.
+        readonly property real gapThickness: root.dockWindowVisible
+            ? Math.max(4, root.panelEdgeMargin) : 4
+        width: root.isVertical ? gapThickness : root.baseWindowMainLength
+        height: root.isVertical ? root.baseWindowMainLength : gapThickness
+        flags: Qt.WindowDoesNotAcceptFocus | Qt.FramelessWindowHint
+        color: "transparent"
+        visible: root.dockAvailable && root.autoHideRequired
+            && !root.fullscreenWindowPresent
+            && (!root.dockWindowVisible || root.panelEdgeMargin > 0.5)
+
+        LayerShell.Window.scope: "macosdock-edge"
+        LayerShell.Window.anchors: {
+            if (root.dockLocation === PlasmaCore.Types.TopEdge) {
+                return LayerShell.Window.AnchorTop;
+            }
+            if (root.dockLocation === PlasmaCore.Types.LeftEdge) {
+                return LayerShell.Window.AnchorLeft;
+            }
+            if (root.dockLocation === PlasmaCore.Types.RightEdge) {
+                return LayerShell.Window.AnchorRight;
+            }
+            return LayerShell.Window.AnchorBottom;
+        }
+        LayerShell.Window.margins.left: 0
+        LayerShell.Window.margins.top: 0
+        LayerShell.Window.margins.right: 0
+        LayerShell.Window.margins.bottom: 0
+        LayerShell.Window.exclusionZone: -1
+        LayerShell.Window.layer: LayerShell.Window.LayerTop
+        LayerShell.Window.keyboardInteractivity:
+            LayerShell.Window.KeyboardInteractivityNone
+        LayerShell.Window.activateOnShow: false
+        LayerShell.Window.wantsToBeOnActiveScreen: true
+
+        onVisibleChanged: {
+            if (!visible) {
+                root.edgeHovered = false;
+                root.scheduleDockHide();
+            }
+            // Fensterwechsel: die neu gemappte Fläche muss die Geometrie
+            // übernehmen, sonst zeigt KWin weiter auf die zerstörte alte.
+            root.republishTaskGeometry();
+            geometryRepublishTimer.restart();
+        }
+
+        Item {
+            anchors.fill: parent
+
+            // Ist das Dock automatisch versteckt (Vollbild oder maximiertes
+            // Fenster bei hideOnMaximized), sind Basis- und Overlay-Fenster
+            // nicht gemappt. Ihre wl_surface existiert dann nicht mehr und KWin
+            // verliert die veröffentlichte Minimier-Geometrie — die Animation
+            // fliegt anschließend in eine Ersatzposition statt zum Icon.
+            //
+            // Dieses Kantenfenster ist genau in diesem Zustand gemappt und
+            // exakt so lang wie das Dock. Wir veröffentlichen die Geometrie
+            // deshalb hier weiter: an der Bildschirmkante, aber an der
+            // richtigen Position des jeweiligen Icons.
+            Repeater {
+                id: edgeGeometryRepeater
+
+                model: tasksModel
+
+                delegate: Item {
+                    id: edgeGeometryProxy
+
+                    required property int index
+
+                    readonly property real proxyCenter: root.baseCenterForIndex(
+                        root.taskDockStartIndex
+                            + root.visualIndexForModelIndex(index))
+
+                    // Unsichtbar, aber nicht `visible: false` — die Geometrie
+                    // eines Items muss im Szenengraph auflösbar bleiben.
+                    opacity: 0
+                    width: root.isVertical ? edgeWindow.width : root.baseIconSize
+                    height: root.isVertical ? root.baseIconSize : edgeWindow.height
+                    x: root.isVertical ? 0 : proxyCenter - width / 2
+                    y: root.isVertical ? proxyCenter - height / 2 : 0
+
+                    function publishEdgeGeometry() {
+                        // Quand le Dock est affiché, c'est lui qui publie la
+                        // géométrie des icônes.
+                        if (!edgeWindow.visible || root.dockWindowVisible) {
+                            return;
+                        }
+                        root.publishDelegateGeometry(index, edgeGeometryProxy,
+                            edgeWindow);
+                    }
+
+                    onXChanged: Qt.callLater(publishEdgeGeometry)
+                    onYChanged: Qt.callLater(publishEdgeGeometry)
+                    onWidthChanged: Qt.callLater(publishEdgeGeometry)
+                    onHeightChanged: Qt.callLater(publishEdgeGeometry)
+                    Component.onCompleted: Qt.callLater(publishEdgeGeometry)
+
+                    Connections {
+                        target: root
+
+                        function onDockWindowVisibleChanged() {
+                            Qt.callLater(edgeGeometryProxy.publishEdgeGeometry);
+                        }
+                    }
+                }
+            }
+
+            FolderDropTarget {
+                anchors.fill: parent
+                z: 1
+            }
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+
+                onHoveredChanged: {
+                    root.edgeHovered = hovered;
+                    if (hovered) {
+                        // Même chose que pour le Dock : un menu étranger
+                        // (clic droit sur le bureau) garderait le pointeur.
+                        if (root.dismissForeignPopups()) {
+                            root.zoomSuppressed = true;
+                        }
+                        root.requestEdgeReveal();
+                    } else {
+                        edgeRevealTimer.stop();
+                        root.scheduleDockHide();
+                        root.noteZoomSuppressCheck();
+                    }
+                }
+            }
+        }
+    }
+
+    Window {
+        id: overlayWindow
+
+        objectName: "macOSDock"
+        title: "macOS Dock"
+        width: root.overlayWindowWidth
+        height: root.overlayWindowHeight
+        flags: Qt.WindowDoesNotAcceptFocus | Qt.FramelessWindowHint
+        color: "transparent"
+        visible: root.overlayVisible
+
+        LayerShell.Window.scope: "macosdock"
+        LayerShell.Window.anchors: {
+            if (root.dockLocation === PlasmaCore.Types.TopEdge) {
+                return LayerShell.Window.AnchorTop;
+            }
+            if (root.dockLocation === PlasmaCore.Types.LeftEdge) {
+                return LayerShell.Window.AnchorLeft;
+            }
+            if (root.dockLocation === PlasmaCore.Types.RightEdge) {
+                return LayerShell.Window.AnchorRight;
+            }
+            return LayerShell.Window.AnchorBottom;
+        }
+        LayerShell.Window.margins.left: root.panelEdgeMargin
+        LayerShell.Window.margins.top: root.panelEdgeMargin
+        LayerShell.Window.margins.right: root.panelEdgeMargin
+        LayerShell.Window.margins.bottom: root.panelEdgeMargin
+        LayerShell.Window.exclusionZone: -1
+        LayerShell.Window.layer: LayerShell.Window.LayerTop
+        LayerShell.Window.keyboardInteractivity:
+            LayerShell.Window.KeyboardInteractivityNone
+        LayerShell.Window.activateOnShow: false
+        LayerShell.Window.wantsToBeOnActiveScreen: true
+
+        onVisibleChanged: {
+            if (!visible) {
+                root.overlayHovered = false;
+            }
+            root.republishTaskGeometry();
+            geometryRepublishTimer.restart();
+        }
+
+        Item {
+            id: overlayContent
+
+            anchors.fill: parent
+            // Même décalage que la fenêtre de base (calculé sur SA taille, pas
+            // sur celle de la fenêtre agrandie, plus haute) : les deux fonds
+            // sont collés au bord de l'écran et doivent glisser exactement du
+            // même nombre de pixels, sinon leurs bordures se croisent pendant
+            // l'apparition du Dock.
+            transform: Translate {
+                x: root.dockSlideX(root.baseWindowWidth)
+                y: root.dockSlideY(root.baseWindowHeight)
+            }
+
+            readonly property real mainLength: root.isVertical ? height : width
+            readonly property var itemGeometry: calculateItemGeometry()
+            readonly property real currentIconMainLength:
+                itemGeometry.iconMainLength
+            readonly property real currentMainLength: itemGeometry.mainLength
+
+            function scaleAtDockIndex(index) {
+                var item = null;
+                if (index >= root.taskDockStartIndex
+                        && index < root.taskDockStartIndex
+                            + root.taskVisualCount) {
+                    var taskVisualIndex =
+                        index - root.taskDockStartIndex;
+                    item = overlayRepeater.itemAt(
+                        root.modelIndexForVisualIndex(taskVisualIndex));
+                } else if (index >= root.folderDockIndex
+                        && index < root.folderDockIndex
+                            + root.folderItemCount) {
+                    item = folderOverlayRepeater.itemAt(
+                        index - root.folderDockIndex);
+                } else if (index >= root.removableVolumeDockStartIndex
+                        && index < root.removableVolumeDockStartIndex
+                            + root.removableVolumeCount) {
+                    item = removableVolumeOverlayRepeater.itemAt(
+                        index - root.removableVolumeDockStartIndex);
+                } else if (index === root.trashDockIndex) {
+                    item = trashOverlayItem;
+                } else if (index === root.powerButtonDockIndex) {
+                    item = powerOverlayItem;
+                }
+                // Repeater.itemAt() is statically typed as Item, while every
+                // Dock item has currentScale.
+                // qmllint disable missing-property
+                var scale = item ? Number(item["currentScale"]) : 1.0;
+                // qmllint enable missing-property
+                return Number.isFinite(scale) ? scale : 1.0;
+            }
+
+            function calculateItemGeometry() {
+                var count = root.dockItemCount;
+                if (count <= 0) {
+                    return {
+                        iconMainLength: 0,
+                        mainLength: root.desktopSwitcherMainExtent,
+                        centers: [],
+                        extents: []
+                    };
+                }
+
+                var iconMainLength = Math.max(0, count - 1) * root.itemSpacing
+                    + root.sectionBreakAfterDockIndices.length
+                        * root.utilitySectionGap;
+                var extents = [];
+                for (var index = 0; index < count; ++index) {
+                    var extent = root.baseIconSize
+                        * scaleAtDockIndex(index);
+                    extents.push(extent);
+                    iconMainLength += extent;
+                }
+
+                var currentMainLength = iconMainLength
+                    + root.desktopSwitcherMainExtent
+                    + root.desktopSwitcherSectionSpacing;
+                var cursor = (mainLength - currentMainLength) / 2
+                    + root.desktopSwitcherLeadingExtent;
+                var centers = [];
+                for (var visualIndex = 0; visualIndex < count;
+                        ++visualIndex) {
+                    centers.push(cursor + extents[visualIndex] / 2);
+                    cursor += extents[visualIndex] + root.itemSpacing;
+                    if (root.hasSectionBreakAfterDockIndex(visualIndex)) {
+                        cursor += root.utilitySectionGap;
+                    }
+                }
+                return {
+                    iconMainLength: iconMainLength,
+                    mainLength: currentMainLength,
+                    centers: centers,
+                    extents: extents
+                };
+            }
+
+            function centerForVisualIndex(index) {
+                return index >= 0 && index < itemGeometry.centers.length
+                    ? itemGeometry.centers[index] : 0;
+            }
+
+            function centerForModelIndex(index) {
+                return centerForVisualIndex(
+                    root.taskDockStartIndex
+                        + root.visualIndexForModelIndex(index));
+            }
+
+            function separatorPositionAfter(index) {
+                if (index < 0 || index >= itemGeometry.centers.length) {
+                    return 0;
+                }
+                return itemGeometry.centers[index]
+                    + itemGeometry.extents[index] / 2
+                    + (root.itemSpacing + root.utilitySectionGap) / 2;
+            }
+
+            function desktopSwitcherStart() {
+                var start = (mainLength - currentMainLength) / 2;
+                if (root.desktopSwitcherOnLeft
+                        || root.dockItemCount === 0) {
+                    return start;
+                }
+                return start + currentIconMainLength
+                    + root.desktopSwitcherSectionSpacing;
+            }
+
+            function desktopSeparatorPosition() {
+                if (!root.desktopSwitcherVisible
+                        || root.dockItemCount === 0) {
+                    return 0;
+                }
+                var start = (mainLength - currentMainLength) / 2;
+                return root.desktopSwitcherOnLeft
+                    ? start + root.desktopSwitcherMainExtent
+                        + root.desktopSwitcherSectionSpacing / 2
+                    : start + currentIconMainLength
+                        + root.desktopSwitcherSectionSpacing / 2;
+            }
+
+            // Centre (sur l'axe transversal, dans la zone des icônes) d'une
+            // icône non agrandie. Les icônes grandissent à partir du bord du
+            // Dock : leur centre au repos n'est donc pas celui de la zone,
+            // qui est plus haute (taille maximale). Centrer le séparateur
+            // sur la zone le faisait monter dès que le Dock était survolé.
+            function restIconCrossCenter() {
+                var atStart = (!root.isVertical
+                        && root.dockLocation === PlasmaCore.Types.TopEdge)
+                    || (root.isVertical
+                        && root.dockLocation === PlasmaCore.Types.LeftEdge);
+                return atStart
+                    ? root.indicatorSpace + root.baseIconSize / 2
+                    : root.maximumIconSize - root.baseIconSize / 2;
+            }
+
+            function desktopSwitcherCrossStart(crossExtent) {
+                if (!root.isVertical) {
+                    if (root.dockLocation === PlasmaCore.Types.TopEdge) {
+                        return 0;
+                    }
+                    if (root.dockLocation === PlasmaCore.Types.BottomEdge) {
+                        return root.maximumIconSize - crossExtent;
+                    }
+                } else {
+                    if (root.dockLocation === PlasmaCore.Types.LeftEdge) {
+                        return 0;
+                    }
+                    if (root.dockLocation === PlasmaCore.Types.RightEdge) {
+                        return root.maximumIconSize - crossExtent;
+                    }
+                }
+                return (root.maximumIconSize - crossExtent) / 2;
+            }
+
+            function visualIndexAtMainPosition(pos) {
+                var count = root.taskVisualCount;
+                if (count <= 0) {
+                    return -1;
+                }
+                var bestIndex = 0;
+                var minDiff = Math.abs(pos - centerForVisualIndex(
+                    root.taskDockStartIndex));
+                for (var i = 1; i < count; ++i) {
+                    var diff = Math.abs(pos - centerForVisualIndex(
+                        root.taskDockStartIndex + i));
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestIndex = i;
+                    }
+                }
+                return bestIndex;
+            }
+
+            DockBackground {
+                id: overlayBackgroundSurface
+
+                z: 0
+                // Teinte et bordure sont affichées aussitôt, à la taille des
+                // icônes agrandies ; seul le verre attend d'être prêt, et la
+                // fenêtre de base, dessous, garde le sien jusque-là (voir
+                // DockBackground et coveredByOverlay).
+                glassFadeMs: 0
+                borderStrength: root.borderStrength
+                borderWidth: root.borderWidth
+                colorFromWallpaper: root.borderColorFromWallpaper
+                glassEnabled: root.glassEnabled
+                backdropWindows: root.backdropWindows
+                liveBackdrop: root.liveBackdrop
+                glassBlur: root.glassBlurRadius
+                glassRefraction: root.liquidGlass
+                glassThickness: root.glassThickness
+                glassStrength: root.glassStrength
+                glassDispersion: root.glassDispersion
+                glassProfile: root.glassProfile
+                glassRim: root.glassRim
+                wallpaperInfo: root.wallpaperInfo
+                colorSampler: wallpaperLocator
+                backdropOrigin: Qt.point(
+                    root.dockWindowOrigin(overlayWindow).x
+                        + overlayBackgroundSurface.x,
+                    root.dockWindowOrigin(overlayWindow).y
+                        + overlayBackgroundSurface.y)
+                lightActive: overlayHover.hovered
+                lightIntensity: root.borderLightIntensity
+                lightX: root.pointerX - overlayBackgroundSurface.x
+                lightY: root.pointerY - overlayBackgroundSurface.y
+                surfaceOpacity: root.backgroundOpacity
+                useThemeColor: root.useThemeBackground
+                customColor: root.customBackgroundColor
+                requestedRadius: root.cornerRadius
+                borderOpacity: root.borderOpacity
+                shadowOpacity: root.shadowOpacity
+                showHighlight: root.showHighlight
+                highlightStrength: root.highlightStrength
+                showShadow: false
+                // Le « cadre » (frame) est le rectangle qui contient le fond
+                // et les icônes ; le fond dessiné est rétréci de surfaceInset
+                // de chaque côté pour ne jamais toucher le bord de la fenêtre.
+                readonly property real frameWidth: root.isVertical
+                    ? root.baseSurfaceCrossLength
+                    : overlayContent.currentMainLength + 2 * root.mainMargin
+                readonly property real frameHeight: root.isVertical
+                    ? overlayContent.currentMainLength + 2 * root.mainMargin
+                    : root.baseSurfaceCrossLength
+                x: (root.isVertical
+                    ? overlayContent.surfaceCrossStart(frameWidth)
+                    : (overlayContent.width - frameWidth) / 2)
+                    + root.surfaceInset
+                y: (root.isVertical
+                    ? (overlayContent.height - frameHeight) / 2
+                    : overlayContent.surfaceCrossStart(frameHeight))
+                    + root.surfaceInset
+                width: frameWidth - 2 * root.surfaceInset
+                height: frameHeight - 2 * root.surfaceInset
+            }
+
+            FolderDropTarget {
+                x: overlayBackgroundSurface.x
+                y: overlayBackgroundSurface.y
+                width: overlayBackgroundSurface.width
+                height: overlayBackgroundSurface.height
+                z: 1
+                excludedItems: [trashOverlayItem, powerOverlayItem]
+            }
+
+            Rectangle {
+                x: overlayBackgroundSurface.x
+                y: overlayBackgroundSurface.y
+                width: overlayBackgroundSurface.width
+                height: overlayBackgroundSurface.height
+                z: 9998
+                visible: root.folderDropActive
+                color: "transparent"
+                radius: root.cornerRadius
+                border.width: 2
+                border.color: Kirigami.Theme.highlightColor
+            }
+
+            // Position (sur l'axe transversal) de la zone qui contient les
+            // icônes agrandies, calculée à partir du fond du dock. Au repos
+            // (échelle 1), les icônes se retrouvent ainsi exactement à la même
+            // place que dans la fenêtre de base.
+            function iconAreaCrossStart() {
+                var areaLength = root.maximumIconSize + root.indicatorSpace;
+                var surfaceStart = (root.isVertical
+                    ? overlayBackgroundSurface.x : overlayBackgroundSurface.y)
+                    - root.surfaceInset;
+                var surfaceLength = root.baseSurfaceCrossLength;
+                var atStart = (!root.isVertical
+                        && root.dockLocation === PlasmaCore.Types.TopEdge)
+                    || (root.isVertical
+                        && root.dockLocation === PlasmaCore.Types.LeftEdge);
+                if (atStart) {
+                    return surfaceStart + root.crossMargin;
+                }
+                return surfaceStart + surfaceLength - root.crossMargin
+                    - areaLength;
+            }
+
+            function surfaceCrossStart(surfaceCrossLength) {
+                var crossLength = root.isVertical ? width : height;
+                if (!root.isVertical) {
+                    if (root.dockLocation === PlasmaCore.Types.TopEdge) {
+                        return 0;
+                    }
+                    if (root.dockLocation === PlasmaCore.Types.BottomEdge) {
+                        return crossLength - surfaceCrossLength;
+                    }
+                } else {
+                    if (root.dockLocation === PlasmaCore.Types.LeftEdge) {
+                        return 0;
+                    }
+                    if (root.dockLocation === PlasmaCore.Types.RightEdge) {
+                        return crossLength - surfaceCrossLength;
+                    }
+                }
+                return (crossLength - surfaceCrossLength) / 2;
+            }
+
+            HoverHandler {
+                id: overlayHover
+
+                cursorShape: Qt.PointingHandCursor
+                onPointChanged: {
+                    if (hovered) {
+                        root.notePointer(root.isVertical
+                            ? point.position.y : point.position.x,
+                            point.position.x, point.position.y);
+                    }
+                }
+                onHoveredChanged: {
+                    root.overlayHovered = hovered;
+                    if (hovered) {
+                        root.revealDock();
+                        root.notePointer(root.isVertical
+                            ? point.position.y : point.position.x,
+                            point.position.x, point.position.y);
+                        overlayCloseTimer.stop();
+                        root.requestOverlayOpen();
+                    } else {
+                        root.scheduleOverlayClose();
+                        root.scheduleDockHide();
+                        root.noteZoomSuppressCheck();
+                    }
+                }
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                gesturePolicy: TapHandler.ReleaseWithinBounds
+                onTapped: (eventPoint) => {
+                    root.menuSeparatorVisual = root.separatorBoundaryAtMain(
+                        root.isVertical ? eventPoint.position.y
+                            : eventPoint.position.x);
+                    dockMenu.popupAt(overlayWindow,
+                        eventPoint.scenePosition.x,
+                        eventPoint.scenePosition.y);
+                }
+            }
+
+            TrackedMenu {
+                id: dockMenu
+
+                MenuEntry {
+                    id: addSeparatorItem
+
+                    text: i18n("Add separator")
+                    iconName: "list-add"
+                    visible: root.menuSeparatorVisual >= 0
+                        && root.userSeparatorVisualSlots.indexOf(
+                            root.menuSeparatorVisual) < 0
+                    onTriggered: root.addUserSeparatorAfterVisual(
+                        root.menuSeparatorVisual)
+                }
+
+                MenuEntry {
+                    id: removeSeparatorItem
+
+                    text: i18n("Remove separator")
+                    iconName: "list-remove"
+                    visible: root.menuSeparatorVisual >= 0
+                        && root.userSeparatorVisualSlots.indexOf(
+                            root.menuSeparatorVisual) >= 0
+                    onTriggered: root.removeUserSeparatorAtVisual(
+                        root.menuSeparatorVisual)
+                }
+
+                MenuEntry {
+                    text: i18n("Configure Dock…")
+                    iconName: "configure"
+                    onTriggered: Plasmoid.internalAction("configure").trigger()
+                }
+            }
+
+            Item {
+                z: 1
+
+                // La zone des icônes est ancrée sur le fond du dock (et non sur
+                // le bord de la fenêtre) : sinon, le windowPadding décale toutes
+                // les icônes par rapport au fond dès que le calque s'affiche.
+                x: root.isVertical ? overlayContent.iconAreaCrossStart() : 0
+                y: root.isVertical ? 0 : overlayContent.iconAreaCrossStart()
+                width: root.isVertical
+                    ? root.maximumIconSize + root.indicatorSpace
+                    : overlayContent.width
+                height: root.isVertical
+                    ? overlayContent.height
+                    : root.maximumIconSize + root.indicatorSpace
+
+                Repeater {
+                    model: root.systemSectionBreakAfterDockIndices
+
+                    delegate: Rectangle {
+                        required property int modelData
+
+                        color: Kirigami.Theme.textColor
+                        opacity: 0.24
+                        radius: 1
+                        width: root.isVertical
+                            ? root.baseIconSize * 0.62 : 1
+                        height: root.isVertical
+                            ? 1 : root.baseIconSize * 0.62
+                        x: root.isVertical
+                            ? overlayContent.restIconCrossCenter() - width / 2
+                            : overlayContent.separatorPositionAfter(modelData)
+                                - width / 2
+                        y: root.isVertical
+                            ? overlayContent.separatorPositionAfter(modelData)
+                                - height / 2
+                            : overlayContent.restIconCrossCenter() - height / 2
+                    }
+                }
+
+                // Séparateurs de l'utilisateur : on peut les saisir et les
+                // glisser comme une icône.
+                Repeater {
+                    model: root.userSeparatorVisualSlots.length
+
+                    delegate: Item {
+                        id: userSeparator
+
+                        required property int index
+                        readonly property real slot:
+                            root.userSeparatorVisualSlots[index] === undefined
+                                ? -1 : root.userSeparatorVisualSlots[index]
+                        readonly property bool dragging:
+                            root.separatorDragIndex === index
+                        readonly property real grabMain: Math.max(14,
+                            root.utilitySectionGap + root.itemSpacing)
+
+                        visible: slot >= 0
+                        width: root.isVertical ? root.baseIconSize : grabMain
+                        height: root.isVertical ? grabMain : root.baseIconSize
+                        x: root.isVertical
+                            ? overlayContent.restIconCrossCenter() - width / 2
+                            : overlayContent.separatorPositionAfter(
+                                root.taskDockStartIndex + slot) - width / 2
+                        y: root.isVertical
+                            ? overlayContent.separatorPositionAfter(
+                                root.taskDockStartIndex + slot) - height / 2
+                            : overlayContent.restIconCrossCenter() - height / 2
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            color: Kirigami.Theme.textColor
+                            opacity: userSeparator.dragging ? 0.7 : 0.24
+                            radius: 1
+                            width: root.isVertical
+                                ? root.baseIconSize * 0.62 : 1
+                            height: root.isVertical
+                                ? 1 : root.baseIconSize * 0.62
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton
+                            hoverEnabled: true
+                            preventStealing: true
+                            cursorShape: root.isVertical
+                                ? Qt.SizeVerCursor : Qt.SizeHorCursor
+                            onPressed: root.beginSeparatorDrag(userSeparator.index)
+                            onPositionChanged: (mouse) => {
+                                if (!pressed) {
+                                    return;
+                                }
+                                var point = mapToItem(overlayContent,
+                                    mouse.x, mouse.y);
+                                root.updateSeparatorDrag(root.isVertical
+                                    ? point.y : point.x);
+                            }
+                            onReleased: root.endSeparatorDrag(true)
+                            onCanceled: root.endSeparatorDrag(false)
+                        }
+                    }
+                }
+
+                Rectangle {
+                    visible: root.desktopSwitcherVisible
+                        && root.dockItemCount > 0
+                    color: Kirigami.Theme.textColor
+                    opacity: 0.24
+                    radius: 1
+                    width: root.isVertical
+                        ? root.baseIconSize * 0.62 : 1
+                    height: root.isVertical
+                        ? 1 : root.baseIconSize * 0.62
+                    x: root.isVertical
+                        ? overlayContent.restIconCrossCenter() - width / 2
+                        : overlayContent.desktopSeparatorPosition()
+                            - width / 2
+                    y: root.isVertical
+                        ? overlayContent.desktopSeparatorPosition()
+                            - height / 2
+                        : overlayContent.restIconCrossCenter() - height / 2
+                }
+
+                DesktopSwitcher {
+                    visible: root.desktopSwitcherVisible
+                    x: root.isVertical
+                        ? overlayContent.desktopSwitcherCrossStart(crossExtent)
+                        : overlayContent.desktopSwitcherStart()
+                    y: root.isVertical
+                        ? overlayContent.desktopSwitcherStart()
+                        : overlayContent.desktopSwitcherCrossStart(crossExtent)
+                }
+
+                Repeater {
+                    id: overlayRepeater
+
+                    model: tasksModel
+
+                    delegate: TaskDelegate {
+                        inOverlay: true
+                        displayScale: root.scaleForIndex(
+                            root.taskDockStartIndex
+                                + root.visualIndexForModelIndex(index),
+                            root.lastPointerMain, root.overlayZoomActive,
+                            overlayContent.mainLength, root.effectiveMaxScale,
+                            root.baseIconSize)
+                        displayCrossExtent: root.maximumIconSize
+                        x: root.isVertical ? 0
+                            : overlayContent.centerForModelIndex(index)
+                                - scaledSize / 2
+                        y: root.isVertical
+                            ? overlayContent.centerForModelIndex(index)
+                                - scaledSize / 2 : 0
+                    }
+                }
+
+                Repeater {
+                    id: folderOverlayRepeater
+
+                    model: root.folderItemCount
+
+                    delegate: UtilityDelegate {
+                        required property int index
+
+                        inOverlay: true
+                        folderIndex: index
+                        folderUrl: root.folderUrlAt(index)
+                        dockIndex: root.folderDockIndex + index
+                        utilityType: "folder"
+                        displayScale: root.scaleForIndex(dockIndex,
+                            root.lastPointerMain, root.overlayZoomActive,
+                            overlayContent.mainLength, root.effectiveMaxScale,
+                            root.baseIconSize)
+                        displayCrossExtent: root.maximumIconSize
+                        x: root.isVertical ? 0
+                            : overlayContent.centerForVisualIndex(dockIndex)
+                                - scaledSize / 2
+                        y: root.isVertical
+                            ? overlayContent.centerForVisualIndex(dockIndex)
+                                - scaledSize / 2 : 0
+                    }
+                }
+
+                Repeater {
+                    id: removableVolumeOverlayRepeater
+
+                    model: root.showRemovableVolumes ? removableVolumesModel : 0
+
+                    delegate: RemovableVolumeDelegate {
+                        required property int index
+                        required property string udi
+                        inOverlay: true
+                        required property string displayName
+                        required property string iconName
+                        required property string kind
+                        required property string errorText
+                        required property bool canOpen
+                        required property bool canRemove
+                        required property bool mounted
+                        required property bool busy
+                        required property string operation
+
+                        volumeUdi: udi
+                        volumeDisplayName: displayName
+                        volumeIconName: iconName
+                        volumeKind: kind
+                        volumeCanOpen: canOpen
+                        volumeCanRemove: canRemove
+                        volumeErrorText: errorText
+                        volumeMounted: mounted
+                        volumeBusy: busy
+                        volumeOperation: operation
+
+                        dockIndex: root.removableVolumeDockStartIndex + index
+                        displayScale: root.scaleForIndex(dockIndex,
+                            root.lastPointerMain, root.overlayZoomActive,
+                            overlayContent.mainLength, root.effectiveMaxScale,
+                            root.baseIconSize)
+                        displayCrossExtent: root.maximumIconSize
+                        x: root.isVertical ? 0
+                            : overlayContent.centerForVisualIndex(dockIndex)
+                                - scaledSize / 2
+                        y: root.isVertical
+                            ? overlayContent.centerForVisualIndex(dockIndex)
+                                - scaledSize / 2 : 0
+                    }
+                }
+
+                UtilityDelegate {
+                    id: trashOverlayItem
+
+                    visible: root.showTrash
+                    inOverlay: true
+                    dockIndex: root.trashDockIndex
+                    utilityType: "trash"
+                    displayScale: root.scaleForIndex(dockIndex,
+                        root.lastPointerMain, root.overlayZoomActive,
+                        overlayContent.mainLength, root.effectiveMaxScale,
+                        root.baseIconSize)
+                    displayCrossExtent: root.maximumIconSize
+                    x: root.isVertical ? 0
+                        : overlayContent.centerForVisualIndex(dockIndex)
+                            - scaledSize / 2
+                    y: root.isVertical
+                        ? overlayContent.centerForVisualIndex(dockIndex)
+                            - scaledSize / 2 : 0
+                }
+
+                PowerDelegate {
+                    id: powerOverlayItem
+
+                    visible: root.showPowerButton
+                    inOverlay: true
+                    dockIndex: root.powerButtonDockIndex
+                    displayScale: root.scaleForIndex(dockIndex,
+                        root.lastPointerMain, root.overlayZoomActive,
+                        overlayContent.mainLength, root.effectiveMaxScale,
+                        root.baseIconSize)
+                    displayCrossExtent: root.maximumIconSize
+                    x: root.isVertical ? 0
+                        : overlayContent.centerForVisualIndex(dockIndex)
+                            - scaledSize / 2
+                    y: root.isVertical
+                        ? overlayContent.centerForVisualIndex(dockIndex)
+                            - scaledSize / 2 : 0
+                }
+            }
+        }
+    }
+}

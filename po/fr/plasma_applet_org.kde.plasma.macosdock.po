@@ -1,0 +1,1620 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: macOS Dock Plasmoid Plasma 6 1.13.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-27 14:54+0200\n"
+"PO-Revision-Date: 2026-07-27 14:54+0200\n"
+"Last-Translator: Dominik Lübben <dominikluebben@googlemail.com>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: contents/config/config.qml:6
+msgid "General"
+msgstr "Général"
+
+#: contents/ui/AppGroupPopup.qml:312
+msgid "Group name"
+msgstr "Nom du groupe"
+
+#: contents/ui/AppGroupPopup.qml:325 contents/ui/main.qml:2602
+msgid "Ungroup"
+msgstr "Dissocier"
+
+#: contents/ui/AppGroupPopup.qml:361 contents/ui/AppGroupPopup.qml:414
+#: contents/ui/main.qml:1250 contents/ui/main.qml:1348
+#: contents/ui/main.qml:1349 contents/ui/main.qml:2199
+msgid "Application"
+msgstr "Application"
+
+#: contents/ui/AppGroupPopup.qml:363 contents/ui/AppGroupPopup.qml:422
+#: contents/ui/DockItem.qml:86
+msgid "Running"
+msgstr "En cours d’exécution"
+
+#: contents/ui/AppGroupPopup.qml:363 contents/ui/DockItem.qml:86
+msgid "Launcher"
+msgstr "Lanceur"
+
+#: contents/ui/AppGroupPopup.qml:437
+msgid "Remove from Group"
+msgstr "Retirer du groupe"
+
+#: contents/ui/ConfigGeneral.qml:66
+msgid "Appearance"
+msgstr "Apparence"
+
+#: contents/ui/ConfigGeneral.qml:72
+msgid "Dock position:"
+msgstr "Position du Dock :"
+
+#: contents/ui/ConfigGeneral.qml:73
+msgid "Bottom"
+msgstr "Bas"
+
+#: contents/ui/ConfigGeneral.qml:73 contents/ui/ConfigGeneral.qml:378
+#: contents/ui/ConfigGeneral.qml:387
+msgid "Left"
+msgstr "Gauche"
+
+#: contents/ui/ConfigGeneral.qml:73 contents/ui/ConfigGeneral.qml:378
+#: contents/ui/ConfigGeneral.qml:387
+msgid "Right"
+msgstr "Droite"
+
+#: contents/ui/ConfigGeneral.qml:77
+msgid "Icon size:"
+msgstr "Taille des icônes :"
+
+#: contents/ui/ConfigGeneral.qml:89 contents/ui/ConfigGeneral.qml:106
+#: contents/ui/ConfigGeneral.qml:123 contents/ui/ConfigGeneral.qml:140
+#: contents/ui/ConfigGeneral.qml:190 contents/ui/ConfigGeneral.qml:317
+msgid " px"
+msgstr " px"
+
+#: contents/ui/ConfigGeneral.qml:94
+msgid "Left/right margin:"
+msgstr "Marge gauche/droite :"
+
+#: contents/ui/ConfigGeneral.qml:111
+msgid "Top/bottom margin:"
+msgstr "Marge supérieure/inférieure :"
+
+#: contents/ui/ConfigGeneral.qml:128
+msgid "Distance from screen edge:"
+msgstr "Distance du bord de l’écran :"
+
+#: contents/ui/ConfigGeneral.qml:145
+msgid "Background opacity:"
+msgstr "Opacité de l’arrière-plan :"
+
+#: contents/ui/ConfigGeneral.qml:164
+msgid "Background:"
+msgstr "Arrière-plan :"
+
+#: contents/ui/ConfigGeneral.qml:165
+msgid "Use color from the Plasma theme"
+msgstr "Utiliser la couleur du thème Plasma"
+
+#: contents/ui/ConfigGeneral.qml:171
+msgid "Custom background color:"
+msgstr "Couleur d’arrière-plan personnalisée :"
+
+#: contents/ui/ConfigGeneral.qml:174
+msgid "Choose Dock Background Color"
+msgstr "Choisir la couleur d’arrière-plan du Dock"
+
+#: contents/ui/ConfigGeneral.qml:178
+msgid "Corner radius:"
+msgstr "Rayon des coins :"
+
+#: contents/ui/ConfigGeneral.qml:212
+msgid "Shadow strength:"
+msgstr "Intensité de l’ombre :"
+
+#: contents/ui/ConfigGeneral.qml:229
+msgid "Effects:"
+msgstr "Effets :"
+
+#: contents/ui/ConfigGeneral.qml:233
+msgid "Blur the background"
+msgstr "Flouter l’arrière-plan"
+
+#: contents/ui/ConfigGeneral.qml:238
+msgid "Show glass highlight"
+msgstr "Afficher le reflet vitré"
+
+#: contents/ui/ConfigGeneral.qml:243
+msgid "Preview:"
+msgstr "Aperçu :"
+
+#: contents/ui/ConfigGeneral.qml:265
+msgid "Window behavior:"
+msgstr "Comportement des fenêtres :"
+
+#: contents/ui/ConfigGeneral.qml:266
+msgid "Automatically hide when a window is maximized"
+msgstr "Masquer automatiquement lorsqu’une fenêtre est maximisée"
+
+#: contents/ui/ConfigGeneral.qml:272
+msgid "Integrations:"
+msgstr "Intégrations :"
+
+#: contents/ui/ConfigGeneral.qml:273
+msgid "Show download and job progress indicators"
+msgstr "Afficher les indicateurs de progression des téléchargements et des tâches"
+
+#: contents/ui/ConfigGeneral.qml:279
+msgid "Show KDE Connect recent shares"
+msgstr "Afficher les partages récents KDE Connect"
+
+#: contents/ui/ConfigGeneral.qml:284
+msgid "Magnification and animation"
+msgstr "Agrandissement et animation"
+
+#: contents/ui/ConfigGeneral.qml:288
+msgid "Maximum magnification:"
+msgstr "Agrandissement maximal :"
+
+#: contents/ui/ConfigGeneral.qml:305
+msgid "Magnification radius:"
+msgstr "Rayon d’agrandissement :"
+
+#: contents/ui/ConfigGeneral.qml:324
+msgid "Launch animation:"
+msgstr "Animation de lancement :"
+
+#: contents/ui/ConfigGeneral.qml:326
+msgid "None"
+msgstr "Aucune"
+
+#: contents/ui/ConfigGeneral.qml:326
+msgid "Bounce"
+msgstr "Rebond"
+
+msgid "Magnification dynamics:"
+msgstr "Dynamique d’agrandissement :"
+
+msgid ""
+"Response controls speed; damping controls how firmly the magnification "
+"settles without oscillating."
+msgstr ""
+"La réactivité contrôle la vitesse ; l’amortissement détermine la fermeté "
+"avec laquelle l’agrandissement se stabilise sans osciller."
+
+msgid "Magnification response:"
+msgstr "Réactivité de l’agrandissement :"
+
+msgid "Magnification damping:"
+msgstr "Amortissement de l’agrandissement :"
+
+msgid "Click bounce height:"
+msgstr "Hauteur du rebond au clic :"
+
+msgid "Launch bounce height:"
+msgstr "Hauteur du rebond au lancement :"
+
+msgid "Show Dock duration:"
+msgstr "Durée d’affichage du Dock :"
+
+msgid "Hide Dock duration:"
+msgstr "Durée de masquage du Dock :"
+
+msgid "Group popup duration:"
+msgstr "Durée de la fenêtre de groupe :"
+
+msgid "Group popup bounce:"
+msgstr "Rebond de la fenêtre de groupe :"
+
+msgid "Folder hover zoom:"
+msgstr "Zoom au survol des dossiers :"
+
+msgid " ms"
+msgstr " ms"
+
+#: contents/ui/ConfigGeneral.qml:331
+msgid "Dock items"
+msgstr "Éléments du Dock"
+
+#: contents/ui/ConfigGeneral.qml:335
+msgid "Utilities:"
+msgstr "Utilitaires :"
+
+#: contents/ui/ConfigGeneral.qml:339
+msgid "Show folder view"
+msgstr "Afficher la vue du dossier"
+
+#: contents/ui/ConfigGeneral.qml:344
+msgid "Open folder on hover when a document from it is open"
+msgstr ""
+"Ouvrir le dossier au survol lorsqu'un document qui s'y trouve est ouvert"
+
+#: contents/ui/ConfigGeneral.qml:352
+msgid "Open app group on hover when one of its apps is running"
+msgstr ""
+"Ouvrir le groupe d'applications au survol lorsque l'une de ses applications "
+"est en cours d'exécution"
+
+#: contents/ui/ConfigGeneral.qml:357
+msgid "Show Trash"
+msgstr "Afficher la corbeille"
+
+#: contents/ui/ConfigGeneral.qml:349
+msgid "Show removable drives"
+msgstr "Afficher les lecteurs amovibles"
+
+#: contents/ui/ConfigGeneral.qml:354
+msgid "Show desktop switcher"
+msgstr "Afficher le sélecteur de bureaux"
+
+#: contents/ui/ConfigGeneral.qml:359
+msgid "Show power button"
+msgstr "Afficher le bouton d’alimentation"
+
+#: contents/ui/ConfigGeneral.qml:366
+msgid "View layouts"
+msgstr "Disposition des vues"
+
+#: contents/ui/ConfigGeneral.qml:372
+msgid "App group layout:"
+msgstr "Disposition des groupes d’applications :"
+
+#: contents/ui/ConfigGeneral.qml:369 contents/ui/FolderPopup.qml:359
+msgid "List View"
+msgstr "Vue en liste"
+
+#: contents/ui/ConfigGeneral.qml:369 contents/ui/FolderPopup.qml:374
+msgid "Grid View"
+msgstr "Vue en grille"
+
+#: contents/ui/ConfigGeneral.qml:375
+msgid "Power button position:"
+msgstr "Position du bouton d’alimentation :"
+
+#: contents/ui/ConfigGeneral.qml:384
+msgid "Desktop switcher position:"
+msgstr "Position du sélecteur de bureaux :"
+
+#: contents/ui/ConfigGeneral.qml:393
+msgid "Desktop labels:"
+msgstr "Libellés des bureaux :"
+
+#: contents/ui/ConfigGeneral.qml:396
+msgid "Numbers"
+msgstr "Numéros"
+
+#: contents/ui/ConfigGeneral.qml:396
+msgid "Desktop names"
+msgstr "Noms des bureaux"
+
+#: contents/ui/ConfigGeneral.qml:400
+msgid "Desktop names:"
+msgstr "Noms des bureaux :"
+
+#: contents/ui/ConfigGeneral.qml:405
+msgid "The names configured in Plasma, including custom names, are shown."
+msgstr "Les noms configurés dans Plasma, y compris les noms personnalisés, sont affichés."
+
+#: contents/ui/ConfigGeneral.qml:410
+msgid "Default folder:"
+msgstr "Dossier par défaut :"
+
+#: contents/ui/ConfigGeneral.qml:425
+msgid "Choose…"
+msgstr "Choisir…"
+
+#: contents/ui/ConfigGeneral.qml:429
+msgid "Choose folder"
+msgstr "Choisir un dossier"
+
+#: contents/ui/ConfigGeneral.qml:434
+msgid "Folder view:"
+msgstr "Vue du dossier :"
+
+#: contents/ui/ConfigGeneral.qml:438
+msgid "If no folder is selected, the Downloads folder is used. Drag folders from the file manager onto the Dock to add more stacks."
+msgstr "Si aucun dossier n’est sélectionné, le dossier Téléchargements est utilisé. Faites glisser d’autres dossiers depuis le gestionnaire de fichiers sur le Dock pour ajouter des piles."
+
+#: contents/ui/ConfigGeneral.qml:445
+msgid "Choose Folder for the Dock"
+msgstr "Choisir le dossier du Dock"
+
+#: contents/ui/ConfigGeneral.qml:454
+msgid "Applications"
+msgstr "Applications"
+
+#: contents/ui/ConfigGeneral.qml:458
+msgid "Dock content:"
+msgstr "Contenu du Dock :"
+
+#: contents/ui/ConfigGeneral.qml:461
+msgid "Running applications appear automatically. Right-click an icon to keep it in the Dock, unpin it, or move it. The widget does not include fixed launchers."
+msgstr "Les applications en cours d’exécution apparaissent automatiquement. Faites un clic droit sur une icône pour la conserver dans le Dock, la détacher ou la déplacer. Le composant graphique ne contient aucun lanceur prédéfini."
+
+#: contents/ui/ConfigGeneral.qml:466
+msgid "Standalone placement:"
+msgstr "Placement autonome :"
+
+#: contents/ui/ConfigGeneral.qml:469
+msgid "Place this widget directly on the Plasma desktop, not inside a panel. The invisible desktop widget only stores settings; the Dock itself uses a separate transparent window anchored to the selected screen edge and centered along it. BetterBlur can blur that window directly."
+msgstr "Placez ce composant directement sur le bureau Plasma, et non dans un panneau. Le composant de bureau invisible conserve uniquement les réglages ; le Dock utilise sa propre fenêtre transparente ancrée au bord d’écran sélectionné et centrée le long de celui-ci. BetterBlur peut flouter directement cette fenêtre."
+
+#: contents/ui/FolderPopup.qml:111 contents/ui/main.qml:459
+msgid "Folder"
+msgstr "Dossier"
+
+#: contents/ui/FolderPopup.qml:293
+msgid "Back"
+msgstr "Retour"
+
+#: contents/ui/FolderPopup.qml:324
+msgid "Open in File Manager"
+msgstr "Ouvrir dans le gestionnaire de fichiers"
+
+#: contents/ui/FolderPopup.qml:404
+msgid "Name"
+msgstr "Nom"
+
+#: contents/ui/FolderPopup.qml:404
+msgid "Date"
+msgstr "Date"
+
+#: contents/ui/FolderPopup.qml:405
+msgid "Size"
+msgstr "Taille"
+
+#: contents/ui/FolderPopup.qml:405
+msgid "Type"
+msgstr "Type"
+
+#: contents/ui/FolderPopup.qml:419
+msgid "Descending"
+msgstr "Décroissant"
+
+#: contents/ui/FolderPopup.qml:419
+msgid "Ascending"
+msgstr "Croissant"
+
+#: contents/ui/FolderPopup.qml:431
+msgid "Hide hidden files"
+msgstr "Masquer les fichiers cachés"
+
+#: contents/ui/FolderPopup.qml:432
+msgid "Show hidden files"
+msgstr "Afficher les fichiers cachés"
+
+#: contents/ui/FolderPopup.qml:720
+msgid "This folder is empty"
+msgstr "Ce dossier est vide"
+
+#: contents/ui/RecentShareBadge.qml:22 contents/ui/RecentShareBadge.qml:75
+#: contents/ui/RecentShareBadge.qml:76
+msgid "Recent share from %1"
+msgstr "Partage récent depuis %1"
+
+#: contents/ui/WindowPreviewToolTip.qml:210
+msgid "Preview unavailable"
+msgstr "Aperçu indisponible"
+
+#: contents/ui/WindowPreviewToolTip.qml:281 contents/ui/main.qml:2571
+msgid "Close"
+msgstr "Fermer"
+
+#: contents/ui/main.qml:377
+msgid "Desktop %1"
+msgstr "Bureau %1"
+
+#: contents/ui/main.qml:1250 contents/ui/main.qml:1477
+msgid "Group"
+msgstr "Groupe"
+
+#: contents/ui/main.qml:2483
+msgid "Activate"
+msgstr "Activer"
+
+#: contents/ui/main.qml:2483
+msgid "Open"
+msgstr "Ouvrir"
+
+#: contents/ui/main.qml:2490
+msgid "Open New Window"
+msgstr "Ouvrir une nouvelle fenêtre"
+
+#: contents/ui/main.qml:2498 contents/ui/main.qml:3021
+msgid "Open again from %1"
+msgstr "Rouvrir depuis %1"
+
+#: contents/ui/main.qml:2513
+msgid "Unpin from Dock"
+msgstr "Détacher du Dock"
+
+#: contents/ui/main.qml:2513
+msgid "Keep in Dock"
+msgstr "Conserver dans le Dock"
+
+#: contents/ui/main.qml:2520
+msgid "Move Up"
+msgstr "Déplacer vers le haut"
+
+#: contents/ui/main.qml:2520
+msgid "Move Left"
+msgstr "Déplacer vers la gauche"
+
+#: contents/ui/main.qml:2529
+msgid "Move Down"
+msgstr "Déplacer vers le bas"
+
+#: contents/ui/main.qml:2529
+msgid "Move Right"
+msgstr "Déplacer vers la droite"
+
+#: contents/ui/main.qml:2544 contents/ui/main.qml:2558
+msgid "Restore All"
+msgstr "Tout restaurer"
+
+#: contents/ui/main.qml:2544 contents/ui/main.qml:2558
+msgid "Restore"
+msgstr "Restaurer"
+
+#: contents/ui/main.qml:2546
+msgid "Minimize All"
+msgstr "Tout réduire"
+
+#: contents/ui/main.qml:2546
+msgid "Minimize"
+msgstr "Réduire"
+
+#: contents/ui/main.qml:2560
+msgid "Maximize All"
+msgstr "Tout maximiser"
+
+#: contents/ui/main.qml:2560
+msgid "Maximize"
+msgstr "Maximiser"
+
+#: contents/ui/main.qml:2571
+msgid "Close All Windows"
+msgstr "Fermer toutes les fenêtres"
+
+#: contents/ui/main.qml:2583
+msgid "Force Quit Application…"
+msgstr "Forcer à quitter l’application…"
+
+#: contents/ui/main.qml:2595
+msgid "Open Group"
+msgstr "Ouvrir le groupe"
+
+#: contents/ui/main.qml:2653
+msgid "Current desktop"
+msgstr "Bureau actuel"
+
+#: contents/ui/main.qml:2653
+msgid "Switch desktop"
+msgstr "Changer de bureau"
+
+#: contents/ui/main.qml:2749 contents/ui/main.qml:2798
+msgid "Add desktop"
+msgstr "Ajouter un bureau"
+
+#: contents/ui/main.qml:2938
+msgid "Trash"
+msgstr "Corbeille"
+
+#: contents/ui/main.qml:3007
+msgid "Open Folder"
+msgstr "Ouvrir le dossier"
+
+#: contents/ui/main.qml:3007
+msgid "Open Trash"
+msgstr "Ouvrir la corbeille"
+
+#: contents/ui/main.qml:3034
+msgid "Remove Folder from Dock"
+msgstr "Retirer le dossier du Dock"
+
+#: contents/ui/main.qml:3042
+msgid "Empty Trash"
+msgstr "Vider la corbeille"
+
+#: contents/ui/main.qml:3051
+msgid "Power / Session"
+msgstr "Alimentation / Session"
+
+#: contents/ui/main.qml:3061
+msgid "Sleep / Standby"
+msgstr "Mise en veille"
+
+#: contents/ui/main.qml:3068
+msgid "Restart…"
+msgstr "Redémarrer…"
+
+#: contents/ui/main.qml:3076
+msgid "Shut Down…"
+msgstr "Éteindre…"
+
+#: contents/ui/main.qml:3086
+msgid "Lock Screen"
+msgstr "Verrouiller l’écran"
+
+#: contents/ui/main.qml:3093
+msgid "Log Out…"
+msgstr "Se déconnecter…"
+
+#: contents/ui/main.qml:3182
+msgid "Open Volume"
+msgstr "Ouvrir le volume"
+
+#: contents/ui/main.qml:3184
+msgid "Mounting…"
+msgstr "Montage…"
+
+#: contents/ui/main.qml:3185
+msgid "Mount Volume"
+msgstr "Monter le volume"
+
+#: contents/ui/main.qml:3194
+msgid "Ejecting…"
+msgstr "Éjection…"
+
+#: contents/ui/main.qml:3196
+msgid "Unmounting…"
+msgstr "Démontage…"
+
+#: contents/ui/main.qml:3198
+msgid "Eject Disc"
+msgstr "Éjecter le disque"
+
+#: contents/ui/main.qml:3199
+msgid "Unmount Volume"
+msgstr "Démonter le volume"
+
+#: contents/ui/main.qml:4060
+msgid "Configure Dock…"
+msgstr "Configurer le Dock…"
+
+#: native/removablevolumesmodel.cpp:177
+msgid "Removable Drive"
+msgstr "Lecteur amovible"
+
+#: native/removablevolumesmodel.cpp:421
+msgid "Failed to unmount volume."
+msgstr "Échec du démontage du volume."
+
+#: native/removablevolumesmodel.cpp:453
+msgid "Failed to eject optical disc."
+msgstr "Échec de l'éjection du disque optique."
+
+#: native/removablevolumesmodel.cpp:514
+msgid "Could not initiate mounting."
+msgstr "Impossible d'initier le montage."
+
+#: native/removablevolumesmodel.cpp:536
+msgid "Failed to mount volume."
+msgstr "Échec du montage du volume."
+
+#: native/removablevolumesmodel.cpp:578
+msgid "Failed to open volume."
+msgstr "Impossible d'ouvrir le volume."
+
+#: native/removablevolumesmodel.cpp:643
+msgid "Could not initiate eject."
+msgstr "Impossible d'initier l'éjection."
+
+#: native/removablevolumesmodel.cpp:664
+msgid "Could not initiate unmounting."
+msgstr "Impossible d'initier le démontage."
+
+#: contents/ui/ConfigGeneral.qml:582
+msgid "Open removable drives in a new tab"
+msgstr "Ouvrir les disques amovibles dans un nouvel onglet"
+
+#: contents/ui/main.qml:3366
+msgid "Open in New Tab"
+msgstr "Ouvrir dans un nouvel onglet"
+
+#: contents/ui/main.qml:3368
+msgid "Open in New Window"
+msgstr "Ouvrir dans une nouvelle fenêtre"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Animation"
+msgstr "Animation"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Miscellaneous"
+msgstr "Divers"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Glass highlight:"
+msgstr "Reflet vitré :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Virtual desktops:"
+msgstr "Bureaux virtuels :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Each desktop has its own Dock (only show windows of the current desktop)"
+msgstr "Chaque bureau a son propre Dock (n’afficher que les fenêtres du bureau actuel)"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Style"
+msgstr "Style"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Style:"
+msgstr "Style :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Copy style"
+msgstr "Copier le style"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Copy all settings of every tab and the icons kept in the Dock"
+msgstr "Copier tous les réglages de tous les onglets et les icônes conservées dans le Dock"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Paste style"
+msgstr "Coller le style"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Apply a style copied earlier, including the Dock icons"
+msgstr "Appliquer un style copié précédemment, y compris les icônes du Dock"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Reset settings"
+msgstr "Réinitialiser les paramètres"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Restore the default settings of every tab (Dock icons are kept)"
+msgstr "Rétablir les réglages par défaut de tous les onglets (les icônes du Dock sont conservées)"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Style copied: all settings and the Dock icons are in the clipboard."
+msgstr "Style copié : tous les réglages et les icônes du Dock sont dans le presse-papiers."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The clipboard does not contain a Dock style. Use “Copy style” first."
+msgstr "Le presse-papiers ne contient pas de style de Dock. Utilisez d’abord « Copier le style »."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Style pasted. Click “Apply” to save it."
+msgstr "Style collé. Cliquez sur « Appliquer » pour l’enregistrer."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Settings reset. Dock icons were kept. Click “Apply” to save."
+msgstr "Paramètres réinitialisés. Les icônes du Dock ont été conservées. Cliquez sur « Appliquer » pour enregistrer."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "All settings of every tab will return to their default values. The icons kept in the Dock are not affected."
+msgstr "Tous les réglages de tous les onglets reviendront à leurs valeurs par défaut. Les icônes conservées dans le Dock ne sont pas modifiées."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Border intensity:"
+msgstr "Intensité de la bordure :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Background blur:"
+msgstr "Flou de l’arrière-plan :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Experimental. Blurs the desktop wallpaper behind the Dock with an adjustable intensity. Windows behind the Dock are not blurred. The wallpaper is detected automatically; if nothing happens, choose the image yourself below."
+msgstr "Expérimental. Floute le fond d’écran derrière le Dock avec une intensité réglable. Les fenêtres situées derrière le Dock ne sont pas floutées. Le fond d’écran est détecté automatiquement ; si rien ne se passe, choisissez l’image vous-même ci-dessous."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Open in Finder"
+msgstr "Ouvrir dans le Finder"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Wallpaper image:"
+msgstr "Image du fond d’écran :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Automatic"
+msgstr "Automatique"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Detect the wallpaper automatically"
+msgstr "Détecter le fond d’écran automatiquement"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Choose the wallpaper image"
+msgstr "Choisir l’image du fond d’écran"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Images (*.png *.jpg *.jpeg *.webp *.bmp *.avif)"
+msgstr "Images (*.png *.jpg *.jpeg *.webp *.bmp *.avif)"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Brightness of the border: 100 % is a solid outline, 0 % removes it."
+msgstr "Luminosité de la bordure : 100 % donne un contour plein, 0 % supprime la bordure."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The border light follows the mouse"
+msgstr "La lumière de la bordure suit la souris"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Icon spacing:"
+msgstr "Espacement des icônes :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Border light:"
+msgstr "Lumière de la bordure :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Intensity of the light that follows the mouse along the border: 100 % is the original look, 0 % turns the light off."
+msgstr "Intensité de la lumière qui suit la souris le long de la bordure : 100 % correspond au rendu d’origine, 0 % éteint la lumière."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blurs everything behind the Dock, windows included, with KWin's blur effect. Any value above 0 % turns it on; the strength is set by KWin (System Settings, Window Management, Desktop Effects, Blur), which must be enabled."
+msgstr "Floute tout ce qui se trouve derrière le Dock, fenêtres comprises, grâce à l’effet de flou de KWin. Toute valeur supérieure à 0 % l’active ; l’intensité est réglée par KWin (Configuration du système, Gestion des fenêtres, Effets de bureau, Flou), qui doit être activé."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The border takes the colors of the wallpaper. If it stays white, choose the wallpaper image yourself below."
+msgstr "La bordure prend les couleurs du fond d’écran. Si elle reste blanche, choisissez vous-même l’image du fond d’écran ci-dessous."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blur what is behind the Dock"
+msgstr "Flouter ce qui se trouve derrière le Dock"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blurs everything behind the Dock, windows included, using KWin's blur effect. KWin sets the strength for all windows (System Settings, Window Management, Desktop Effects, Blur), and that effect must be enabled."
+msgstr "Floute tout ce qui se trouve derrière le Dock, fenêtres comprises, grâce à l’effet de flou de KWin. KWin règle l’intensité pour toutes les fenêtres (Configuration du système, Gestion des fenêtres, Effets de bureau, Flou) et cet effet doit être activé."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Active app indicator:"
+msgstr "Voyant de l’application active :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Use the highlight color of the Plasma theme"
+msgstr "Utiliser la couleur d’accentuation du thème Plasma"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Indicator color:"
+msgstr "Couleur du voyant :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Choose the Active App Indicator Color"
+msgstr "Choisir la couleur du voyant de l’application active"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Border width:"
+msgstr "Largeur de la bordure :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Glass"
+msgstr "Glass"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Behind the Dock:"
+msgstr "Derrière le Dock :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Glass effect:"
+msgstr "Effet Glass :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Control the KWin Glass effect from the Dock"
+msgstr "Régler l’effet KWin Glass depuis le Dock"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "These settings drive the KWin “Glass” effect (the liquid-glass-kde project), which must be installed. The effect is global to KWin: panels and menus are affected too. Nothing is written to KWin unless this box is checked, and only when a value changes. The starting values are the defaults of the liquid-glass-kde project."
+msgstr "Ces réglages pilotent l’effet KWin « Glass » (le projet liquid-glass-kde), qui doit être installé. L’effet est global à KWin : les panneaux et les menus sont aussi concernés. Rien n’est écrit dans KWin tant que cette case n’est pas cochée, et seulement quand une valeur change. Les valeurs de départ sont celles par défaut du projet liquid-glass-kde."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blur"
+msgstr "Flou"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blur strength:"
+msgstr "Force du flou :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blur fineness:"
+msgstr "Finesse du flou :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Grain:"
+msgstr "Grain :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Saturation:"
+msgstr "Saturation :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The blur strength, fineness and grain apply to docks only. The saturation applies to everything the effect blurs."
+msgstr "La force, la finesse et le grain du flou ne concernent que les docks. La saturation s’applique à tout ce que l’effet floute."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Refraction:"
+msgstr "Réfraction :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Bend what is behind the edges, like a lens"
+msgstr "Déformer ce qui est derrière les bords, comme une lentille"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Edge thickness:"
+msgstr "Épaisseur du bord :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Refraction index:"
+msgstr "Indice de réfraction :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Lens strength:"
+msgstr "Force de la lentille :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Edge profile:"
+msgstr "Profil du bord :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Colored fringes:"
+msgstr "Franges colorées :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Edge blur:"
+msgstr "Flou des bords :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Edge highlight:"
+msgstr "Reflet des bords :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The edge blur needs the patched Glass effect of the liquid-glass-kde project. The light that follows the mouse around the Dock border is the Dock's own (Appearance tab)."
+msgstr "Le flou des bords nécessite l’effet Glass modifié du projet liquid-glass-kde. La lumière qui suit la souris le long de la bordure du Dock est celle du Dock lui-même (onglet Apparence)."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Off"
+msgstr "Désactivé"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blurs everything behind the Dock, windows included. 0 % turns the blur off. The strength is set through the KWin “Glass” effect (liquid-glass-kde), for docks only; with KWin's standard blur it is only on or off."
+msgstr "Floute tout ce qui se trouve derrière le Dock, fenêtres comprises. 0 % désactive le flou. La force est réglée par l’effet KWin « Glass » (liquid-glass-kde), pour les docks uniquement ; avec le flou standard de KWin, c’est seulement activé ou désactivé."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Border color:"
+msgstr "Couleur de la bordure :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Each part of the border takes the color of the wallpaper behind it"
+msgstr "Chaque partie de la bordure prend la couleur du fond d’écran qui est derrière elle"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "If the border stays white, choose the wallpaper image yourself below."
+msgstr "Si la bordure reste blanche, choisissez vous-même l’image du fond d’écran ci-dessous."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Liquid Glass:"
+msgstr "Liquid Glass :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Bend what is behind the Dock edges, like glass"
+msgstr "Déformer ce qui est derrière les bords du Dock, comme du verre"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Uses the KWin “Glass” effect (the liquid-glass-kde project), which must be installed. When this box is unchecked the Dock has a plain blur, without refraction. The blur intensity is set in the Appearance tab. The settings below are applied to KWin when a value changes; they are global to the effect (panels and menus too), and start from the defaults of the liquid-glass-kde project."
+msgstr "Utilise l’effet KWin « Glass » (le projet liquid-glass-kde), qui doit être installé. Case décochée, le Dock a un flou simple, sans réfraction. L’intensité du flou se règle dans l’onglet Apparence. Les réglages ci-dessous sont appliqués à KWin quand une valeur change ; ils sont globaux à l’effet (panneaux et menus compris) et partent des valeurs par défaut du projet liquid-glass-kde."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "KWin effect:"
+msgstr "Effet KWin :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The fineness and the grain apply to docks only."
+msgstr "La finesse et le grain ne concernent que les docks."
+
+#: contents/ui/GlassStatus.qml
+msgid "The Glass effect is loaded in KWin."
+msgstr "L’effet Glass est chargé dans KWin."
+
+#: contents/ui/GlassStatus.qml
+msgid "The Glass effect is not loaded in KWin. Install the liquid-glass-kde effect, or tick “Liquid Glass” and apply: the Dock then tries to load it."
+msgstr "L’effet Glass n’est pas chargé dans KWin. Installez l’effet liquid-glass-kde, ou cochez « Liquid Glass » et appliquez : le Dock essaie alors de le charger."
+
+#: contents/ui/GlassStatus.qml
+msgid "Check again"
+msgstr "Vérifier à nouveau"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blurs everything behind the Dock, windows included, and follows what moves behind it. 0 % turns the blur off. KWin has a single blur strength for the whole desktop: with the standard blur it also changes panels and other blurred windows; with Liquid Glass it applies to docks only."
+msgstr "Floute tout ce qui se trouve derrière le Dock, fenêtres comprises, et suit ce qui bouge derrière. 0 % désactive le flou. KWin n’a qu’une seule force de flou pour tout le bureau : avec le flou standard, elle change aussi les panneaux et les autres fenêtres floutées ; avec Liquid Glass, elle ne concerne que les docks."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Checked: KWin uses the “Glass” effect (the liquid-glass-kde project, which must be installed) and the Dock bends what is behind it like glass, without any tint. Unchecked: KWin uses its standard blur, a plain blur. The effect is chosen for the whole desktop. The blur intensity is set in the Appearance tab. The settings below are applied when a value changes; they are global to the effect (panels and menus too) and start from the defaults of the liquid-glass-kde project."
+msgstr "Cochée : KWin utilise l’effet « Glass » (le projet liquid-glass-kde, qui doit être installé) et le Dock déforme ce qui est derrière lui comme du verre, sans aucune teinte. Décochée : KWin utilise son flou standard, un flou simple. L’effet est choisi pour tout le bureau. L’intensité du flou se règle dans l’onglet Apparence. Les réglages ci-dessous sont appliqués quand une valeur change ; ils sont globaux à l’effet (panneaux et menus compris) et partent des valeurs par défaut du projet liquid-glass-kde."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Bend what is behind the Dock at its edges, like glass"
+msgstr "Déformer ce qui est derrière le Dock sur ses bords, comme du verre"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Blurs what is behind the Dock (the wallpaper and, in real time, the windows that pass behind it); the higher the value, the blurrier. 0 % turns the blur off. The Dock draws this itself: KWin is not used."
+msgstr "Floute ce qui se trouve derrière le Dock (le fond d’écran et, en temps réel, les fenêtres qui passent derrière) : plus la valeur est élevée, plus c’est flou. 0 % désactive le flou. Le Dock le dessine lui-même : KWin n’est pas utilisé."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Detected wallpaper:"
+msgstr "Fond d’écran détecté :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "If the border stays white, check the detected wallpaper below or choose the image yourself."
+msgstr "Si la bordure reste blanche, vérifiez le fond d’écran détecté ci-dessous ou choisissez vous-même l’image."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "No wallpaper detected: choose the image yourself."
+msgstr "Aucun fond d’écran détecté : choisissez l’image vous-même."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The Dock draws the glass itself, without KWin: it never changes the desktop effects. The blur is set in the Appearance tab (Background blur); the tint is the Background opacity."
+msgstr "Le Dock dessine lui-même le verre, sans KWin : il ne modifie jamais les effets du bureau. Le flou se règle dans l’onglet Apparence (Flou de l’arrière-plan) ; la teinte est l’opacité du fond."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The light that follows the mouse around the Dock border is set in the Appearance tab."
+msgstr "La lumière qui suit la souris autour de la bordure du Dock se règle dans l’onglet Apparence."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Wallpaper found but unreadable: %1"
+msgstr "Fond d’écran trouvé mais illisible : %1"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Live background:"
+msgstr "Arrière-plan en direct :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Show the windows behind the Dock through the glass, in real time"
+msgstr "Voir les fenêtres derrière le Dock à travers le verre, en temps réel"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Applies to the background blur and to Liquid Glass. The windows are captured through PipeWire, like the window previews (Wayland only), so moving a window behind the Dock is visible through the glass. Untick it to show only the wallpaper."
+msgstr "S’applique au flou de l’arrière-plan et au Liquid Glass. Les fenêtres sont capturées via PipeWire, comme les aperçus de fenêtres (Wayland uniquement) : déplacer une fenêtre derrière le Dock se voit donc à travers le verre. Décochez pour ne montrer que le fond d’écran."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Downloads folder icon:"
+msgstr "Icône du dossier Téléchargements :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Default icon"
+msgstr "Icône par défaut"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Choose the icon image for the folder"
+msgstr "Choisir l’image de l’icône du dossier"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Images (*.png *.jpg *.jpeg *.webp *.bmp *.svg *.ico)"
+msgstr "Images (*.png *.jpg *.jpeg *.webp *.bmp *.svg *.ico)"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Use the default icon"
+msgstr "Utiliser l’icône par défaut"
+
+#: contents/ui/main.qml
+msgid "Add separator"
+msgstr "Ajouter un séparateur"
+
+#: contents/ui/main.qml
+msgid "Remove separator"
+msgstr "Supprimer le séparateur"
+
+#: contents/ui/main.qml
+msgid "Options"
+msgstr "Options"
+
+#: contents/ui/main.qml
+msgid "Open Location"
+msgstr "Ouvrir l’emplacement"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Show delay:"
+msgstr "Délai d’affichage :"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Time the pointer must stay at the screen edge before the hidden Dock appears"
+msgstr "Durée pendant laquelle le pointeur doit rester au bord de l’écran pour que le Dock caché s’affiche"
+
+#: contents/ui/AiChat.qml:73 contents/ui/ChatTranscript.qml:148 contents/ui/ConfigGeneral.qml:1626 contents/ui/ConfigGeneral.qml:1748
+msgid "Custom AI"
+msgstr "IA personnalisée"
+
+#: contents/ui/AiChat.qml:85
+msgid "No Gemini API key. Add it in the Dock settings, tab “Credentials”."
+msgstr "Aucune clé API Gemini. Ajoutez-la dans les réglages du Dock, onglet « Identifiants »."
+
+#: contents/ui/AiChat.qml:92
+msgid "The OpenCode command-line tool was not found. Install it from opencode.ai, or switch GLM to “API key” mode in the Dock settings, tab “Credentials”."
+msgstr "La commande OpenCode est introuvable. Installez-la depuis opencode.ai, ou passez GLM en mode « Clé API » dans les réglages du Dock, onglet « Identifiants »."
+
+#: contents/ui/AiChat.qml:97
+msgid "No OpenCode API key. Add it in the Dock settings, tab “Credentials”."
+msgstr "Aucune clé API OpenCode. Ajoutez-la dans les réglages du Dock, onglet « Identifiants »."
+
+#: contents/ui/AiChat.qml:102
+msgid "The custom AI is not configured. Fill in its address and model in the Dock settings, tab “Credentials”."
+msgstr "L’IA personnalisée n’est pas configurée. Renseignez son adresse et son modèle dans les réglages du Dock, onglet « Identifiants »."
+
+#: contents/ui/AiChat.qml:390
+msgid "Network error: %1 could not be reached."
+msgstr "Erreur réseau : %1 est injoignable."
+
+#: contents/ui/AiChat.qml:394
+msgid "%1 refused the request (HTTP %2). Check the API key and the model name."
+msgstr "%1 a refusé la requête (HTTP %2). Vérifiez la clé API et le nom du modèle."
+
+#: contents/ui/AiChat.qml:396
+msgid "%1 did not find this model or address (HTTP 404). Check the model name."
+msgstr "%1 n’a pas trouvé ce modèle ou cette adresse (HTTP 404). Vérifiez le nom du modèle."
+
+#: contents/ui/AiChat.qml:398
+msgid "%1 quota reached (HTTP 429). Wait a moment or pick another model."
+msgstr "Quota de %1 atteint (HTTP 429). Patientez un instant ou choisissez un autre modèle."
+
+#: contents/ui/AiChat.qml:400
+msgid "%1 returned an error (HTTP %2)."
+msgstr "%1 a renvoyé une erreur (HTTP %2)."
+
+#: contents/ui/AiChat.qml:422
+msgid "%1 returned an unreadable answer."
+msgstr "%1 a renvoyé une réponse illisible."
+
+#: contents/ui/AiChat.qml:467
+msgid "Gemini blocked this request (%1)."
+msgstr "Gemini a bloqué cette demande (%1)."
+
+#: contents/ui/AiChat.qml:468
+msgid "Gemini returned an empty answer."
+msgstr "Gemini a renvoyé une réponse vide."
+
+#: contents/ui/AiChat.qml:508
+msgid "%1 returned an empty answer."
+msgstr "%1 a renvoyé une réponse vide."
+
+#: contents/ui/AiChat.qml:566
+msgid "OpenCode took too long to answer."
+msgstr "OpenCode a mis trop de temps à répondre."
+
+#: contents/ui/AiChat.qml:572
+msgid "OpenCode could not answer (exit code %1)."
+msgstr "OpenCode n’a pas pu répondre (code de sortie %1)."
+
+#: contents/ui/AiChat.qml:577
+msgid "OpenCode returned an empty answer."
+msgstr "OpenCode a renvoyé une réponse vide."
+
+#: contents/ui/AiChat.qml:598
+msgid "The assistant took too long to answer."
+msgstr "L’assistant a mis trop de temps à répondre."
+
+#: contents/ui/ChatTranscript.qml:130 contents/ui/SpotlightWindow.qml:777
+msgid "Copy"
+msgstr "Copier"
+
+#: contents/ui/ConfigGeneral.qml:436
+msgid "Hide"
+msgstr "Masquer"
+
+#: contents/ui/ConfigGeneral.qml:436
+msgid "Show"
+msgstr "Afficher"
+
+#: contents/ui/ConfigGeneral.qml:444
+msgid "Enter an API key first."
+msgstr "Saisissez d’abord une clé API."
+
+#: contents/ui/ConfigGeneral.qml:447
+msgid "Testing…"
+msgstr "Test en cours…"
+
+#: contents/ui/ConfigGeneral.qml:456
+msgid "Network error: Google could not be reached."
+msgstr "Erreur réseau : Google est injoignable."
+
+#: contents/ui/ConfigGeneral.qml:460
+msgid "Key rejected (HTTP %1)."
+msgstr "Clé refusée (HTTP %1)."
+
+#: contents/ui/ConfigGeneral.qml:477
+msgid "Key accepted, model “%1” is available."
+msgstr "Clé acceptée, le modèle « %1 » est disponible."
+
+#: contents/ui/ConfigGeneral.qml:482
+msgid "Key accepted, but model “%1” was not found. Try: %2"
+msgstr "Clé acceptée, mais le modèle « %1 » est introuvable. Essayez : %2"
+
+#: contents/ui/ConfigGeneral.qml:540
+msgid "Credentials"
+msgstr "Identifiants"
+
+#: contents/ui/ConfigGeneral.qml:1331
+msgid "Spotlight and Siri AI"
+msgstr "Spotlight et Siri IA"
+
+#: contents/ui/ConfigGeneral.qml:1335
+msgid "Dock icons:"
+msgstr "Icônes du Dock :"
+
+#: contents/ui/ConfigGeneral.qml:1339
+msgid "Show Spotlight button"
+msgstr "Afficher le bouton Spotlight"
+
+#: contents/ui/ConfigGeneral.qml:1344
+msgid "Show Siri AI app"
+msgstr "Afficher l’app Siri IA"
+
+#: contents/ui/ConfigGeneral.qml:1351
+msgid "System launcher:"
+msgstr "Lanceur du système :"
+
+#: contents/ui/ConfigGeneral.qml:1352
+msgid "Replace it with Spotlight (Windows key, Alt+Space, typing on the desktop)"
+msgstr "Le remplacer par le Spotlight (touche Windows, Alt+Espace, frappe sur le bureau)"
+
+#: contents/ui/ConfigGeneral.qml:1358
+msgid "The Windows key and KRunner settings are changed by install.sh (script spotlight-integration.sh); this option only lets Spotlight answer KRunner's calls. Apps, files and clipboard modes are chosen with the button on the left of the search bar."
+msgstr "Les réglages de la touche Windows et de KRunner sont modifiés par install.sh (script spotlight-integration.sh) ; cette option permet seulement au Spotlight de répondre aux appels de KRunner. Les modes Apps, Fichiers et Presse-papiers se choisissent avec le bouton à gauche de la barre de recherche."
+
+#: contents/ui/ConfigGeneral.qml:1624
+msgid "Default assistant:"
+msgstr "Assistant par défaut :"
+
+#: contents/ui/ConfigGeneral.qml:1626 contents/ui/ConfigGeneral.qml:1638
+msgid "Gemini"
+msgstr "Gemini"
+
+#: contents/ui/ConfigGeneral.qml:1626 contents/ui/ConfigGeneral.qml:1699
+msgid "GLM (OpenCode)"
+msgstr "GLM (OpenCode)"
+
+#: contents/ui/ConfigGeneral.qml:1632
+msgid "Keys are stored only in your Plasma configuration (~/.config), never in the Git repository, and “Copy style” does not include them. You can switch assistant at any time from the “…” menu of Spotlight or from Siri AI."
+msgstr "Les clés sont stockées uniquement dans votre configuration Plasma (~/.config), jamais dans le dépôt Git, et « Copier le style » ne les inclut pas. Vous pouvez changer d’assistant à tout moment depuis le menu « … » du Spotlight ou depuis Siri IA."
+
+#: contents/ui/ConfigGeneral.qml:1644 contents/ui/ConfigGeneral.qml:1772
+msgid "API key:"
+msgstr "Clé API :"
+
+#: contents/ui/ConfigGeneral.qml:1646
+msgid "Google AI Studio key"
+msgstr "Clé Google AI Studio"
+
+#: contents/ui/ConfigGeneral.qml:1650 contents/ui/ConfigGeneral.qml:1713 contents/ui/ConfigGeneral.qml:1780
+msgid "Model:"
+msgstr "Modèle :"
+
+#: contents/ui/ConfigGeneral.qml:1667
+msgid "Suggestions"
+msgstr "Suggestions"
+
+#: contents/ui/ConfigGeneral.qml:1677
+msgid "Test key"
+msgstr "Tester la clé"
+
+#: contents/ui/ConfigGeneral.qml:1693
+msgid "Create a free key at aistudio.google.com/apikey. The free tier has daily limits, and Google may use free-tier requests to improve its products."
+msgstr "Créez une clé gratuite sur aistudio.google.com/apikey. L’offre gratuite a des limites quotidiennes, et Google peut utiliser les requêtes de l’offre gratuite pour améliorer ses produits."
+
+#: contents/ui/ConfigGeneral.qml:1705
+msgid "Access:"
+msgstr "Accès :"
+
+#: contents/ui/ConfigGeneral.qml:1707
+msgid "OpenCode command (free models)"
+msgstr "Commande OpenCode (modèles gratuits)"
+
+#: contents/ui/ConfigGeneral.qml:1707
+msgid "API key"
+msgstr "Clé API"
+
+#: contents/ui/ConfigGeneral.qml:1723
+msgid "OpenCode only lets its free models be used from OpenCode itself, so this mode runs the “opencode” command (install it from opencode.ai). No key is needed here."
+msgstr "OpenCode n’autorise ses modèles gratuits que depuis OpenCode lui-même : ce mode lance donc la commande « opencode » (à installer depuis opencode.ai). Aucune clé n’est nécessaire ici."
+
+#: contents/ui/ConfigGeneral.qml:1730
+msgid "OpenCode API key:"
+msgstr "Clé API OpenCode :"
+
+#: contents/ui/ConfigGeneral.qml:1733
+msgid "Key from opencode.ai/console"
+msgstr "Clé issue de opencode.ai/console"
+
+#: contents/ui/ConfigGeneral.qml:1739 contents/ui/ConfigGeneral.qml:1763
+msgid "Address:"
+msgstr "Adresse :"
+
+#: contents/ui/ConfigGeneral.qml:1754
+msgid "Name:"
+msgstr "Nom :"
+
+#: contents/ui/ConfigGeneral.qml:1756
+msgid "Shown in the menus"
+msgstr "Affiché dans les menus"
+
+#: contents/ui/ConfigGeneral.qml:1774
+msgid "Optional for a local server"
+msgstr "Facultative pour un serveur local"
+
+#: contents/ui/ConfigGeneral.qml:1788
+msgid "Any service compatible with the OpenAI chat API works (OpenRouter, Groq, Mistral, a local Ollama at http://localhost:11434/v1…)."
+msgstr "Tout service compatible avec l’API de chat OpenAI fonctionne (OpenRouter, Groq, Mistral, un Ollama local sur http://localhost:11434/v1…)."
+
+#: contents/ui/SiriWindow.qml:146 contents/ui/main.qml:4721
+msgid "Credentials…"
+msgstr "Identifiants…"
+
+#: contents/ui/SiriWindow.qml:157
+msgid "Unpin"
+msgstr "Désépingler"
+
+#: contents/ui/SiriWindow.qml:157
+msgid "Pin"
+msgstr "Épingler"
+
+#: contents/ui/SiriWindow.qml:159
+msgid "Copy Conversation"
+msgstr "Copier la conversation"
+
+#: contents/ui/SiriWindow.qml:161
+msgid "Delete"
+msgstr "Supprimer"
+
+#: contents/ui/SiriWindow.qml:423
+msgid "Search"
+msgstr "Rechercher"
+
+#: contents/ui/SiriWindow.qml:598
+msgid "No conversations found"
+msgstr "Aucune conversation trouvée"
+
+#: contents/ui/SiriWindow.qml:599
+msgid "Your conversations will appear here"
+msgstr "Vos conversations apparaîtront ici"
+
+#: contents/ui/SiriWindow.qml:670
+msgid "How can I help?"
+msgstr "Comment puis-je vous aider ?"
+
+#: contents/ui/SiriWindow.qml:732
+msgid "Ask Siri AI…"
+msgstr "Demandez à Siri IA…"
+
+#: contents/ui/SpotlightWindow.qml:84
+msgid "Utilities"
+msgstr "Utilitaires"
+
+#: contents/ui/SpotlightWindow.qml:85
+msgid "Productivity & Finance"
+msgstr "Productivité et finance"
+
+#: contents/ui/SpotlightWindow.qml:86
+msgid "Photo & Video"
+msgstr "Photo et vidéo"
+
+#: contents/ui/SpotlightWindow.qml:87
+msgid "Entertainment"
+msgstr "Divertissement"
+
+#: contents/ui/SpotlightWindow.qml:88
+msgid "Social"
+msgstr "Réseaux sociaux"
+
+#: contents/ui/SpotlightWindow.qml:89
+msgid "Creativity"
+msgstr "Créativité"
+
+#: contents/ui/SpotlightWindow.qml:90
+msgid "Information & Reading"
+msgstr "Informations et lecture"
+
+#: contents/ui/SpotlightWindow.qml:91
+msgid "Other"
+msgstr "Autres"
+
+#: contents/ui/SpotlightWindow.qml:94
+msgid "Ask a follow-up…"
+msgstr "Poser une autre question…"
+
+#: contents/ui/SpotlightWindow.qml:505 contents/ui/SpotlightWindow.qml:703 contents/ui/SpotlightWindow.qml:96
+msgid "Files"
+msgstr "Fichiers"
+
+#: contents/ui/SpotlightWindow.qml:705 contents/ui/SpotlightWindow.qml:97
+msgid "Clipboard"
+msgstr "Presse-papiers"
+
+#: contents/ui/SpotlightWindow.qml:97
+msgid "Search or Ask"
+msgstr "Rechercher ou demander"
+
+#: contents/ui/SpotlightWindow.qml:248 contents/ui/SpotlightWindow.qml:707
+msgid "Favorites"
+msgstr "Favoris"
+
+#: contents/ui/SpotlightWindow.qml:488 contents/ui/SpotlightWindow.qml:500 contents/ui/SpotlightWindow.qml:528
+msgid "No results"
+msgstr "Aucun résultat"
+
+#: contents/ui/SpotlightWindow.qml:500
+msgid "Searching…"
+msgstr "Recherche en cours…"
+
+#: contents/ui/SpotlightWindow.qml:502
+msgid "No recent files"
+msgstr "Aucun fichier récent"
+
+#: contents/ui/SpotlightWindow.qml:505
+msgid "Recent"
+msgstr "Récents"
+
+#: contents/ui/SpotlightWindow.qml:513
+msgid "Clipboard history is unavailable (Klipper is not running)."
+msgstr "L’historique du presse-papiers est indisponible (Klipper n’est pas lancé)."
+
+#: contents/ui/SpotlightWindow.qml:520
+msgid "Clipboard history"
+msgstr "Historique du presse-papiers"
+
+#: contents/ui/SpotlightWindow.qml:528
+msgid "The clipboard history is empty"
+msgstr "L’historique du presse-papiers est vide"
+
+#: contents/ui/SpotlightWindow.qml:1501 contents/ui/SpotlightWindow.qml:714
+msgid "Ask %1"
+msgstr "Demander à %1"
+
+#: contents/ui/SpotlightWindow.qml:722
+msgid "New Siri AI conversation"
+msgstr "Nouvelle conversation Siri IA"
+
+#: contents/ui/SpotlightWindow.qml:723 contents/ui/main.qml:4673
+msgid "Open Siri AI"
+msgstr "Ouvrir Siri IA"
+
+#: contents/ui/SpotlightWindow.qml:726 contents/ui/main.qml:4682
+msgid "Spotlight Settings…"
+msgstr "Réglages de Spotlight…"
+
+#: contents/ui/SpotlightWindow.qml:767
+msgid "Remove from Favorites"
+msgstr "Retirer des favoris"
+
+#: contents/ui/SpotlightWindow.qml:768
+msgid "Add to Favorites"
+msgstr "Ajouter aux favoris"
+
+#: contents/ui/SpotlightWindow.qml:771
+msgid "Show in File Manager"
+msgstr "Afficher dans le gestionnaire de fichiers"
+
+#: contents/ui/SpotlightWindow.qml:774
+msgid "Show in Folder"
+msgstr "Afficher dans le dossier"
+
+#: contents/ui/SpotlightWindow.qml:775
+msgid "Copy Path"
+msgstr "Copier le chemin"
+
+#: contents/ui/SpotlightWindow.qml:1211
+msgid "No favorites yet. Right-click an app, then “Add to Favorites”."
+msgstr "Aucun favori pour l’instant. Faites un clic droit sur une app, puis « Ajouter aux favoris »."
+
+#: contents/ui/main.qml:4653
+msgid "Spotlight"
+msgstr "Spotlight"
+
+#: contents/ui/main.qml:4667
+msgid "Open Spotlight"
+msgstr "Ouvrir Spotlight"
+
+#: contents/ui/main.qml:4688 contents/ui/main.qml:4729
+msgid "Remove from Dock"
+msgstr "Retirer du Dock"
+
+#: contents/ui/main.qml:4698
+msgid "Siri AI"
+msgstr "Siri IA"
+
+#: contents/ui/main.qml:4715
+msgid "New Conversation"
+msgstr "Nouvelle conversation"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Both are ordinary pinned icons: drag them anywhere in the Dock. Unticking a box removes the icon, ticking it again pins it back at the start."
+msgstr "Ce sont des icônes épinglées ordinaires : faites-les glisser où vous voulez dans le Dock. Décocher une case retire l’icône, la cocher de nouveau la remet au début."
+
+msgid "Spotlight app icon:"
+msgstr "Icône de l’application Spotlight :"
+
+msgid "Siri AI app icon:"
+msgstr "Icône de l’application Siri IA :"
+
+msgid "Choose the icon image for Spotlight"
+msgstr "Choisir l’image de l’icône de Spotlight"
+
+msgid "Choose the icon image for Siri AI"
+msgstr "Choisir l’image de l’icône de Siri IA"
+
+msgid "The Spotlight draws its own glass, like the Dock does, but with its own settings: it does not use KWin or the external Liquid Glass application, and it never changes the Dock glass."
+msgstr "Le Spotlight dessine lui-même son verre, comme le Dock, mais avec ses propres réglages : il n’utilise ni KWin ni l’application Liquid Glass externe, et ne modifie jamais le verre du Dock."
+
+msgid "Show the windows behind the Spotlight through the glass and the border"
+msgstr "Montrer les fenêtres derrière le Spotlight à travers le verre et la bordure"
+
+msgid "Tint:"
+msgstr "Teinte :"
+
+msgid "Border"
+msgstr "Bordure"
+
+msgid "Each part of the border takes the color of what is behind it: if half of the background is blue and the other half red, the border is half blue and half red. A window placed behind the Spotlight changes the border too."
+msgstr "Chaque partie de la bordure prend la couleur de ce qui se trouve derrière : si la moitié de l’arrière-plan est bleue et l’autre rouge, la bordure est moitié bleue, moitié rouge. Une fenêtre placée derrière le Spotlight change aussi la bordure."
+
+msgid "Darken background:"
+msgstr "Assombrir l’arrière-plan :"
+
+msgid "No AI available"
+msgstr "Aucune IA disponible"
+
+msgid "Sources:"
+msgstr "Sources :"
+
+msgid "Web search:"
+msgstr "Recherche web :"
+
+msgid "Let Gemini search the web (Google Search)"
+msgstr "Autoriser Gemini à chercher sur le web (Google Search)"
+
+msgid "Without web search, Gemini only knows what it learned during training and may wrongly claim that a recent model or product does not exist. With it, Gemini looks things up before answering and lists the pages it used. The free tier limits the number of searches per day."
+msgstr "Sans la recherche web, Gemini ne connaît que ce qu’il a appris à l’entraînement et peut affirmer à tort qu’un modèle ou un produit récent n’existe pas. Avec elle, Gemini vérifie sur le web avant de répondre et indique les pages utilisées. L’offre gratuite limite le nombre de recherches par jour."
+
+msgid "Add a folder…"
+msgstr "Ajouter un dossier…"
+
+msgid "Add files…"
+msgstr "Ajouter des fichiers…"
+
+msgid "Attached: %1"
+msgstr "Joint : %1"
+
+msgid "Choose a folder for the AI"
+msgstr "Choisir un dossier pour l’IA"
+
+msgid "Choose files for the AI"
+msgstr "Choisir des fichiers pour l’IA"
+
+msgid "Could not open a file picker."
+msgstr "Impossible d’ouvrir le sélecteur de fichiers."
+
+msgid "Force web search"
+msgstr "Forcer la recherche web"
+
+msgid "Gemini did not run a web search for this answer: it may come from memory and be out of date."
+msgstr "Gemini n’a pas fait de recherche web pour cette réponse : elle peut venir de sa mémoire et être périmée."
+
+msgid "Give a folder or files to the AI"
+msgstr "Donner un dossier ou des fichiers à l’IA"
+
+msgid "Remove all attachments"
+msgstr "Retirer toutes les pièces jointes"
+
+msgid "Web search forced (click to turn off)"
+msgstr "Recherche web forcée (cliquer pour désactiver)"
+
+msgid "Web search: %1"
+msgstr "Recherche web : %1"
+
+msgid "You can attach up to %1 items."
+msgstr "Vous pouvez joindre jusqu’à %1 éléments."
+
+msgid "Application menu: Liquid Glass"
+msgstr "Menu d’applications : Liquid Glass"
+
+msgid "Liquid Glass of the application menu, taken from the Liquid Glass widgets project: the edges bend what is behind them like a glass dome. These settings only change the application menu."
+msgstr "Liquid Glass du menu d’applications, repris du projet de widgets Liquid Glass : les bords déforment ce qui est derrière comme un dôme de verre. Ces réglages ne concernent que le menu d’applications."
+
+msgid "Blur radius:"
+msgstr "Rayon du flou :"
+
+msgid "Refraction strength:"
+msgstr "Force de la réfraction :"
+
+msgid "Color fringing:"
+msgstr "Franges de couleur :"
+
+msgid "Reset menu glass settings"
+msgstr "Réinitialiser le verre du menu"
+
+msgid "Pasted image"
+msgstr "Image collée"
+
+msgid "Image"
+msgstr "Image"
+
+msgid "%1 cannot read images. Choose Gemini or another AI that accepts images."
+msgstr "%1 ne sait pas lire les images. Choisissez Gemini ou une autre IA qui accepte les images."
+
+msgid "Screenshot to Ask Siri…"
+msgstr "Capture d’écran pour Siri…"
+
+msgid "Screenshot"
+msgstr "Capture d’écran"
+
+msgid "Ask Siri"
+msgstr "Demander à Siri"
+
+msgid "Drag to choose an area · Enter: whole screen · Esc: cancel"
+msgstr "Faites glisser pour choisir une zone · Entrée : tout l’écran · Échap : annuler"
+
+msgid "Spectacle is needed to take screenshots, but it was not found."
+msgstr "Spectacle est nécessaire pour les captures d’écran, mais il est introuvable."
+
+msgid "The screenshot failed."
+msgstr "La capture d’écran a échoué."
+
+msgid "Image not found"
+msgstr "Image introuvable"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Prompts"
+msgstr "Prompts"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Save the prompts you type often. Each one appears as a round button above the message bar, in Siri AI and when you talk to it from the Spotlight or a screenshot. A click puts its text in the message bar, ready to be sent or completed. Nothing is shown if the list is empty."
+msgstr "Enregistrez les prompts que vous tapez souvent. Chacun apparaît sous forme de bouton rond au-dessus de la barre de message, dans Siri IA et quand vous lui parlez depuis le Spotlight ou une capture d’écran. Un clic place son texte dans la barre de message, prêt à être envoyé ou complété. Rien n’est affiché si la liste est vide."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Choose the image for this prompt"
+msgstr "Choisir l’image de ce prompt"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Symbol"
+msgstr "Symbole"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Symbols"
+msgstr "Symboles"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Image…"
+msgstr "Image…"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Use an image instead of the symbol"
+msgstr "Utiliser une image à la place du symbole"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Remove the image"
+msgstr "Retirer l’image"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Name (shown when hovering the button)"
+msgstr "Nom (affiché au survol du bouton)"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Move left"
+msgstr "Déplacer vers la gauche"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Move right"
+msgstr "Déplacer vers la droite"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Delete this prompt"
+msgstr "Supprimer ce prompt"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The prompt text…"
+msgstr "Le texte du prompt…"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "Add a prompt"
+msgstr "Ajouter un prompt"
+
+#: contents/ui/ConfigGeneral.qml
+msgid "No prompt yet."
+msgstr "Aucun prompt pour l’instant."
+
+#: contents/ui/ConfigGeneral.qml
+msgid "The spacing stays exactly as set here. It is reduced only when the Dock is about to touch the edges of the screen, so the icons never leave it."
+msgstr "L’espacement reste exactement celui réglé ici. Il n’est réduit que lorsque le Dock est sur le point de toucher les bords de l’écran : les icônes ne sortent jamais du Dock."

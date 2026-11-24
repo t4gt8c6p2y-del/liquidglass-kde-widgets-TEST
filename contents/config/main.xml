@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile/>
+  <group name="General">
+    <entry name="dockPosition" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="maxScale" type="Double">
+      <default>1.45</default>
+    </entry>
+    <entry name="zoomRadius" type="Int">
+      <default>70</default>
+    </entry>
+    <entry name="iconSize" type="Int">
+      <default>44</default>
+    </entry>
+    <!-- Espace entre les icônes, en pixels (limité automatiquement à l'écran). -->
+    <entry name="iconSpacing" type="Int">
+      <default>4</default>
+    </entry>
+    <entry name="dockMargin" type="Int">
+      <default>16</default>
+    </entry>
+    <entry name="dockCrossMargin" type="Int">
+      <default>5</default>
+    </entry>
+    <entry name="screenEdgeMargin" type="Int">
+      <default>8</default>
+    </entry>
+    <entry name="backgroundOpacity" type="Double">
+      <default>0.55</default>
+    </entry>
+    <entry name="useThemeBackground" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="customBackgroundColor" type="Color">
+      <default>#20242b</default>
+    </entry>
+    <entry name="cornerRadius" type="Int">
+      <default>12</default>
+    </entry>
+    <entry name="borderOpacity" type="Double">
+      <default>0.22</default>
+    </entry>
+    <entry name="shadowOpacity" type="Double">
+      <default>0.42</default>
+    </entry>
+    <entry name="showHighlight" type="Bool">
+      <default>true</default>
+    </entry>
+    <!--
+      Curseur qui remplace la case « reflet vitré ». La valeur -1 signifie
+      « pas encore réglé » : on reprend alors l'ancienne case (showHighlight),
+      les réglages existants restent donc identiques après la mise à jour.
+    -->
+    <entry name="highlightStrength" type="Double">
+      <default>-1</default>
+    </entry>
+    <!--
+      Part éclairée de la bordure (0..1). -1 = pas encore réglé : on déduit la
+      valeur de l'ancien réglage borderOpacity.
+    -->
+    <entry name="borderStrength" type="Double">
+      <default>-1</default>
+    </entry>
+    <entry name="wallpaperBlur" type="Double">
+      <default>0</default>
+    </entry>
+    <!-- Image à flouter si le fond d'écran n'est pas détecté (facultatif). -->
+    <entry name="wallpaperBlurImage" type="String">
+      <default></default>
+    </entry>
+    <!--
+      Intensité de la lumière de la bordure qui suit le pointeur (0..2,
+      1 = rendu d'origine). -1 = pas encore réglé : on reprend l'ancienne case
+      borderFollowMouse (cochée = 1, décochée = 0).
+    -->
+    <entry name="borderLightIntensity" type="Double">
+      <default>-1</default>
+    </entry>
+    <!-- Ancienne case, gardée pour reprendre les réglages existants. -->
+    <entry name="borderFollowMouse" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Largeur de la bordure du Dock, en pixels. -->
+    <entry name="borderWidth" type="Double">
+      <default>1.0</default>
+    </entry>
+    <!-- Couleur de la bordure : celle du fond d'écran derrière chaque partie. -->
+    <entry name="borderColorFromWallpaper" type="Bool">
+      <default>true</default>
+    </entry>
+    <!--
+      Onglet « Glass » : Liquid Glass dessiné par le Dock lui-même (le fond
+      d'écran flouté et déformé sur les bords). KWin n'est pas utilisé.
+    -->
+    <entry name="glassManage" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="glassThickness" type="Int">
+      <default>16</default>
+    </entry>
+    <entry name="glassStrength" type="Double">
+      <default>1.0</default>
+    </entry>
+    <entry name="glassProfile" type="Double">
+      <default>1.0</default>
+    </entry>
+    <entry name="glassDispersion" type="Double">
+      <default>0.25</default>
+    </entry>
+    <entry name="glassRimStrength" type="Double">
+      <default>0.0</default>
+    </entry>
+    <!--
+      Le verre (flou de l'arrière-plan, Liquid Glass) montre en direct les
+      fenêtres qui passent derrière le Dock (capture PipeWire, sans KWin).
+      Décoché : seul le fond d'écran est visible à travers le verre.
+    -->
+    <entry name="liveBackdrop" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Voyant de l'application active : couleur du thème ou couleur choisie. -->
+    <entry name="useThemeIndicatorColor" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="indicatorColor" type="Color">
+      <default>#3daee9</default>
+    </entry>
+    <entry name="perDesktopDock" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="hideOnMaximized" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="maximizedRevealDelay" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="launchAnimation" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="magnificationSpring" type="Double">
+      <default>50.0</default>
+    </entry>
+    <entry name="magnificationDamping" type="Double">
+      <default>1.0</default>
+    </entry>
+    <entry name="clickBounceHeight" type="Int">
+      <default>4</default>
+    </entry>
+    <entry name="launchBounceHeight" type="Int">
+      <default>8</default>
+    </entry>
+    <entry name="dockRevealDuration" type="Int">
+      <default>140</default>
+    </entry>
+    <entry name="dockHideDuration" type="Int">
+      <default>160</default>
+    </entry>
+    <entry name="appGroupPopupDuration" type="Int">
+      <default>180</default>
+    </entry>
+    <entry name="appGroupPopupOvershoot" type="Double">
+      <default>1.35</default>
+    </entry>
+    <entry name="folderHoverScale" type="Double">
+      <default>1.06</default>
+    </entry>
+    <entry name="showFolderView" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Image personnalisée pour l'icône du dossier Téléchargements (facultatif). -->
+    <entry name="folderIconImage" type="String">
+      <default></default>
+    </entry>
+    <entry name="folderUrl" type="String">
+      <default></default>
+    </entry>
+    <entry name="autoOpenFolderWithOpenDocument" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="autoOpenAppGroupWithRunningApp" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="appGroupViewMode" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="folderUrls" type="StringList"/>
+    <!-- Séparateurs ajoutés par l'utilisateur : identité de l'icône qui précède. -->
+    <entry name="userSeparators" type="StringList"/>
+    <entry name="showTrash" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showRemovableVolumes" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="openRemovableVolumesInNewTab" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="showDesktopSwitcher" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="desktopSwitcherPosition" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="desktopSwitcherLabelMode" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="showPowerButton" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="powerButtonPosition" type="Int">
+      <default>1</default>
+    </entry>
+    <entry name="showProgressIndicators" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showKdeConnectRecentShares" type="Bool">
+      <default>true</default>
+    </entry>
+    <!--
+      Each entry is a versioned JSON object. Keeping groups separate from the
+      TaskManager launcher list preserves Plasma's native task activation and
+      window tracking while allowing several launcher rows to share one visual
+      Dock slot.
+    -->
+    <entry name="appGroups" type="StringList"/>
+    <entry name="launchers" type="StringList"/>
+
+    <!--
+      Spotlight (barre « Search or Ask » façon macOS 27) et application
+      « Siri IA » : icônes du Dock, favoris du Spotlight, assistant IA.
+    -->
+    <entry name="toolLauncherSeedVersion" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="showSpotlightButton" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Icônes personnalisées (fichier local) de Spotlight et de Siri IA ; vide = icône par défaut. -->
+    <!-- Onglet « Spotlight » : verre propre au Spotlight (indépendant du Dock et de KWin). -->
+    <entry name="spotlightLiveBackdrop" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="spotlightGlassTint" type="Double">
+      <default>0.3</default>
+    </entry>
+    <entry name="spotlightGlassDarken" type="Double">
+      <default>0</default>
+    </entry>
+    <entry name="spotlightBorderStrength" type="Double">
+      <default>0.8</default>
+    </entry>
+    <entry name="spotlightBorderWidth" type="Double">
+      <default>1.5</default>
+    </entry>
+    <!-- Liquid Glass du menu d'applications (réglages du dépôt liquidglass-kde-widgets). -->
+    <entry name="spotlightMenuBlur" type="Int">
+      <default>10</default>
+    </entry>
+    <entry name="spotlightMenuThickness" type="Int">
+      <default>35</default>
+    </entry>
+    <entry name="spotlightMenuRefraction" type="Int">
+      <default>65</default>
+    </entry>
+    <entry name="spotlightMenuIor" type="Double">
+      <default>1.7</default>
+    </entry>
+    <entry name="spotlightMenuChroma" type="Double">
+      <default>0.3</default>
+    </entry>
+    <entry name="spotlightMenuSpec" type="Double">
+      <default>0.7</default>
+    </entry>
+    <entry name="spotlightIconImage" type="String">
+      <default></default>
+    </entry>
+    <entry name="siriIconImage" type="String">
+      <default></default>
+    </entry>
+    <entry name="showSiriButton" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Remplace le lanceur par défaut (touche Windows, Alt+Espace, KRunner). -->
+    <entry name="spotlightReplaceLauncher" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="spotlightFavorites" type="StringList"/>
+    <!--
+      Identifiants de l'assistant IA. Ils restent dans la configuration locale
+      de Plasma (~/.config), jamais dans le dépôt.
+      aiProvider : 0 = Gemini, 1 = GLM (OpenCode), 2 = fournisseur personnalisé.
+      glmBackend : 0 = CLI « opencode » (modèles gratuits), 1 = API avec clé.
+    -->
+    <entry name="aiProvider" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="geminiApiKey" type="String">
+      <default></default>
+    </entry>
+    <entry name="geminiModel" type="String">
+      <default>gemini-3.8-flash</default>
+    </entry>
+    <!-- Recherche web de Gemini (Grounding with Google Search). -->
+    <entry name="geminiWebSearch" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="glmBackend" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="glmModel" type="String">
+      <default>glm-5.3-flash-free</default>
+    </entry>
+    <entry name="glmApiKey" type="String">
+      <default></default>
+    </entry>
+    <entry name="glmBaseUrl" type="String">
+      <default>https://opencode.ai/inference/openai/v1</default>
+    </entry>
+    <entry name="customAiName" type="String">
+      <default></default>
+    </entry>
+    <entry name="customAiUrl" type="String">
+      <default></default>
+    </entry>
+    <entry name="customAiKey" type="String">
+      <default></default>
+    </entry>
+    <entry name="customAiModel" type="String">
+      <default></default>
+    </entry>
+    <!--
+      Prompts enregistrés (onglet « Prompts »). Chaque entrée est un JSON :
+      { "icon": symbole, "image": chemin d'une image, "title": nom, "text": prompt }.
+    -->
+    <entry name="aiPrompts" type="StringList"/>
+  </group>
+</kcfg>
