@@ -372,22 +372,82 @@ PlasmoidItem {
         return (t || "").toLowerCase().replace(/[\s\-_.,:;!?'"()\[\]&]+/g, "")
     }
 
+    // Fallback for the cover lookup: the same request through curl, for the
+    // cases where XMLHttpRequest fails outright (status 0).
+    property var _curlPending: ({})
+    property int _curlCounter: 0
+
+    P5Support.DataSource {
+        id: curlRunner
+        engine: "executable"
+        connectedSources: []
+        onNewData: (source, data) => {
+            disconnectSource(source)
+            var cb = root._curlPending[source]
+            delete root._curlPending[source]
+            if (cb) cb(String(data["stdout"] || ""))
+        }
+    }
+
+    // cb(httpStatus, body)
+    function _curlGet(url, cb) {
+        // The trailing "# n" makes every command text unique (the engine
+        // identifies its sources by their text).
+        var cmd = "curl -sS -L --max-time 8 -A 'Mozilla/5.0' -w '\\n%{http_code}' '"
+                  + url.replace(/'/g, "'\\''") + "' # " + (++_curlCounter)
+        _curlPending[cmd] = function(out) {
+            var i = out.lastIndexOf("\n")
+            cb(parseInt(out.substring(i + 1)) || 0, i >= 0 ? out.substring(0, i) : "")
+        }
+        curlRunner.connectSource(cmd)
+    }
+
     // One cover-art request. `parse` turns the JSON answer into a list of
     // { title, artist, art } and `done` receives that list.
-    function _artGet(url, key, parse, done) {
+    // A network failure / 429 / 5xx is retried once, and when XMLHttpRequest
+    // fails outright the request is repeated through curl.
+    function _artGet(url, key, parse, done, attempt) {
+        attempt = attempt || 0
+        function handle(st, body) {
+            if (root._onlineArtKey !== key) return  // stale
+            if ((st === 0 || st === 429 || st >= 500) && attempt < 1) {
+                root._later(900, function() {
+                    if (root._onlineArtKey === key) root._artGet(url, key, parse, done, attempt + 1)
+                })
+                return
+            }
+            var list = []
+            if (st === 200) {
+                try { list = parse(JSON.parse(body)) }
+                catch (e) { list = [] }
+            }
+            console.log("[liquidglass-music] cover " + url.substring(8, 30) + " : HTTP " + st
+                        + " -> " + list.length + " result(s)")
+            done(list)
+        }
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE) return
-            if (root._onlineArtKey !== key) return  // stale
-            var list = []
-            if (xhr.status === 200) {
-                try { list = parse(JSON.parse(xhr.responseText)) }
-                catch (e) { list = [] }
+            if (xhr.status === 0) {
+                root._curlGet(url, handle)
+                return
             }
-            done(list)
+            handle(xhr.status, xhr.responseText)
         }
-        xhr.open("GET", url)
-        xhr.send()
+        try {
+            xhr.open("GET", url)
+            xhr.send()
+        } catch (e) {
+            handle(0, "")
+        }
+    }
+
+    // Artist used for the cover search: no " - Topic" / "VEVO" suffix and only
+    // the first of several artists (same cleaning as the lock screen project).
+    function _coverArtist(a) {
+        a = (a || "").replace(/\s*-\s*topic$/i, "").replace(/vevo$/i, "")
+        var c = a.split(/\s*(?:,|;|\bfeat\b\.?|\bft\b\.?|&)\s*/i)[0].trim()
+        return (c !== "" ? c : a.trim()).replace(/"/g, "")
     }
 
     // Best cover of a result list: artist + title match first, then title only.
@@ -409,7 +469,9 @@ PlasmoidItem {
     // Cover lookup, several sources in turn (the first one that matches wins):
     // iTunes, then Deezer (exact fields), then Deezer (free text).
     function _fetchOnlineArt() {
-        if (_playerArt !== "" || track === "" || artist === "") {
+        // A missing artist no longer blocks the search (some players only give
+        // a title): the lookup then goes by the title alone.
+        if (_playerArt !== "" || track === "" || track === "Not Playing") {
             _onlineArt = ""
             return
         }
@@ -421,11 +483,12 @@ PlasmoidItem {
         _onlineArt = ""
         _onlineArtKey = key
 
-        var art1 = _firstArtist(artist).replace(/"/g, "")
+        var art1 = _coverArtist(artist)
         var title1 = _cleanTitle(track).replace(/"/g, "")
         var wantT = _normKey(title1)
         var wantA = _normKey(art1)
         if (wantT === "") return
+        console.log("[liquidglass-music] cover search: " + art1 + " - " + title1)
 
         function finish(url) {
             if (url === "") return
@@ -451,13 +514,15 @@ PlasmoidItem {
             }
             return out
         }
+        var term = (art1 + " " + title1).trim()
         function deezerFree() {
-            root._artGet("https://api.deezer.com/search?limit=8&q=" + encodeURIComponent(art1 + " " + title1),
+            root._artGet("https://api.deezer.com/search?limit=8&q=" + encodeURIComponent(term),
                          key, parseDeezer, function(list) { finish(root._pickArt(list, wantT, wantA)) })
         }
         function deezerExact() {
-            root._artGet("https://api.deezer.com/search?limit=8&q="
-                         + encodeURIComponent('artist:"' + art1 + '" track:"' + title1 + '"'),
+            // Exact fields only make sense with an artist.
+            var q = art1 !== "" ? 'artist:"' + art1 + '" track:"' + title1 + '"' : term
+            root._artGet("https://api.deezer.com/search?limit=8&q=" + encodeURIComponent(q),
                          key, parseDeezer, function(list) {
                              var url = root._pickArt(list, wantT, wantA)
                              if (url !== "") finish(url)
@@ -465,7 +530,7 @@ PlasmoidItem {
                          })
         }
         root._artGet("https://itunes.apple.com/search?media=music&entity=song&limit=10&term="
-                     + encodeURIComponent(art1 + " " + title1),
+                     + encodeURIComponent(term),
                      key, parseItunes, function(list) {
                          var url = root._pickArt(list, wantT, wantA)
                          if (url !== "") finish(url)

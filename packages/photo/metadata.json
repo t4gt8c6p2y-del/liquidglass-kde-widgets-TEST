@@ -1,0 +1,21 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "zinczorphin@gmail.com",
+                "Name": "Jack Faith"
+            }
+        ],
+        "Category": "Examples",
+        "Description": "macOS Tahoe style liquid-glass frame for a picture or an animated GIF.",
+        "EnabledByDefault": true,
+        "Icon": "/icon.png",
+        "Id": "com.jaxparrow07.macoswidgets.photo",
+        "License": "GPL-3.0",
+        "Name": "macOS Photo",
+        "Version": "0.1",
+        "Website": "https://github.com/jaxparrow07/liquidglass-kde-widgets"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

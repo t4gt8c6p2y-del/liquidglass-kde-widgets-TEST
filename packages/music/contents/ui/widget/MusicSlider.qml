@@ -14,8 +14,9 @@ Item {
     property real fontSize: 10
     property bool showTimeLabels: true
     property var formatTime: function(us) { return "" }
-    // Tap the right-hand time to switch between total duration and time left.
-    property bool showRemaining: false
+    // Time left (countdown) by default; tap the right-hand time to switch to
+    // the total duration.
+    property bool showRemaining: true
     // false = read-only (the player cannot be seeked)
     property bool seekEnabled: true
 
