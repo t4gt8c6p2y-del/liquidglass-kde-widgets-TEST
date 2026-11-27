@@ -7,6 +7,9 @@ QtObject {
     property double configLatitude: 0
     property double configLongitude: 0
     property int temperatureUnit: 0
+    // Follow the device location, and how often (minutes) to update.
+    property bool useCurrentLocation: false
+    property int refreshIntervalMin: 30
 
     property bool isLoading: true
     property string errorMessage: ""
@@ -38,10 +41,16 @@ QtObject {
     readonly property string tempSymbol: temperatureUnit === 0 ? "°" : "°"
 
     property var _refreshTimer: Timer {
-        interval: 1800000
+        interval: Math.max(1, wd.refreshIntervalMin) * 60000
         running: true
         repeat: true
-        onTriggered: wd._fetchWeather()
+        onTriggered: wd._tick()
+    }
+
+    // One scheduled update: re-locate first when following the device.
+    function _tick() {
+        if (useCurrentLocation) _locateAndFetch()
+        else _fetchWeather()
     }
 
     property int _failCount: 0
@@ -72,7 +81,9 @@ QtObject {
     function forceRefresh() {
         _retryTimer.stop()
         _failCount = 0
-        if (_latitude === 0 && _longitude === 0)
+        if (useCurrentLocation)
+            _locateAndFetch()
+        else if (_latitude === 0 && _longitude === 0)
             _geocodeAndFetch()
         else
             _fetchWeather()
@@ -81,6 +92,10 @@ QtObject {
     function _refreshFromConfig() {
         _retryTimer.stop()
         _failCount = 0
+        if (useCurrentLocation) {
+            _locateAndFetch()
+            return
+        }
         if (configLatitude !== 0 || configLongitude !== 0) {
             _latitude = configLatitude
             _longitude = configLongitude
@@ -94,6 +109,7 @@ QtObject {
     onLocationChanged: _refreshFromConfig()
     onConfigLatitudeChanged: _refreshFromConfig()
     onConfigLongitudeChanged: _refreshFromConfig()
+    onUseCurrentLocationChanged: _refreshFromConfig()
     onTemperatureUnitChanged: {
         if (_latitude !== 0 || _longitude !== 0) _fetchWeather()
     }
@@ -198,6 +214,124 @@ QtObject {
         if (sunrise && sunset) return now < sunrise || now >= sunset
         var h = now.getHours()
         return h < 7 || h >= 19
+    }
+
+    // ── Live location ────────────────────────────────────────────────────
+    // 1) The system location service (GeoClue, through QtPositioning), loaded
+    //    lazily so a missing module cannot break the widget.
+    // 2) If it gives nothing within 12 s, a rough position from the IP address.
+    // On any failure the last known (or configured) position is kept.
+    property bool _locating: false
+    property var _posSource: null
+    property bool _posUnavailable: false
+
+    property var _locTimeout: Timer {
+        interval: 12000
+        repeat: false
+        onTriggered: {
+            if (wd._locating) wd._locateByIp()
+        }
+    }
+
+    function _ensurePosSource() {
+        if (_posUnavailable) return false
+        if (_posSource) return true
+        try {
+            var src = Qt.createQmlObject(
+                'import QtQuick; import QtPositioning; PositionSource { active: false }',
+                wd, "weatherPosSource")
+            if (!src.valid) { src.destroy(); _posUnavailable = true; return false }
+            src.positionChanged.connect(wd._onPosition)
+            _posSource = src
+            return true
+        } catch (e) {
+            _posUnavailable = true
+            return false
+        }
+    }
+
+    function _locateAndFetch() {
+        if (_locating) return
+        _locating = true
+        _locTimeout.restart()
+        if (!_ensurePosSource()) { _locateByIp(); return }
+        try { _posSource.update() } catch (e) { _locateByIp() }
+    }
+
+    function _onPosition() {
+        if (!_locating || !_posSource) return
+        var c = _posSource.position.coordinate
+        if (!c || !c.isValid || isNaN(c.latitude) || isNaN(c.longitude)) return
+        _locTimeout.stop()
+        _reverseName(c.latitude, c.longitude)
+    }
+
+    // Name of the city for a position (the weather API has no reverse lookup).
+    function _reverseName(lat, lon) {
+        var xhr = new XMLHttpRequest()
+        var lang = Qt.locale().name.split("_")[0].toLowerCase()
+        if (!/^[a-z]{2}$/.test(lang)) lang = "en"
+        var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat +
+                  "&longitude=" + lon + "&localityLanguage=" + lang
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            var name = ""
+            if (xhr.status === 200) {
+                try {
+                    var r = JSON.parse(xhr.responseText)
+                    name = r.city || r.locality || r.principalSubdivision || ""
+                } catch (e) {}
+            }
+            wd._applyLocation(lat, lon, name)
+        }
+        xhr.open("GET", url)
+        xhr.send()
+    }
+
+    function _locateByIp() {
+        _locTimeout.stop()
+        var xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (xhr.status === 200) {
+                try {
+                    var r = JSON.parse(xhr.responseText)
+                    if (r.success !== false && isFinite(r.latitude) && isFinite(r.longitude)) {
+                        wd._applyLocation(r.latitude, r.longitude, r.city || "")
+                        return
+                    }
+                } catch (e) {}
+            }
+            wd._locateFailed()
+        }
+        xhr.open("GET", "https://ipwho.is/")
+        xhr.send()
+    }
+
+    function _applyLocation(lat, lon, name) {
+        _locating = false
+        _locTimeout.stop()
+        if (!useCurrentLocation) return
+        _latitude = lat
+        _longitude = lon
+        cityName = name !== "" ? name : location
+        _fetchWeather()
+    }
+
+    function _locateFailed() {
+        _locating = false
+        _locTimeout.stop()
+        if (!useCurrentLocation) return
+        if (_latitude !== 0 || _longitude !== 0) {
+            _fetchWeather()
+        } else if (configLatitude !== 0 || configLongitude !== 0) {
+            _latitude = configLatitude
+            _longitude = configLongitude
+            cityName = location
+            _fetchWeather()
+        } else {
+            _geocodeAndFetch()
+        }
     }
 
     function _geocodeAndFetch() {
