@@ -66,9 +66,9 @@ KCMUtils.SimpleKCM {
             id: fillCombo
             Kirigami.FormData.label: i18n("Fit:")
             model: [
-                i18n("Fit (show the whole picture)"),
-                i18n("Fill (crop to the widget)"),
-                i18n("Stretch")
+                i18n("Entier"),
+                i18n("Agrandi"),
+                i18n("Élargir la photo")
             ]
         }
 

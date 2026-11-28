@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
@@ -39,12 +40,38 @@ PlasmoidItem {
     // GIFs (and other animated formats) go through AnimatedImage.
     readonly property bool isAnimated: /\.(gif|webp|apng|mng)(\?.*)?$/i.test(_rawPath)
 
+    // 0 = Entier (whole picture, may leave empty bands)
+    // 1 = Agrandi (enlarged until it touches every edge, the overflow is cropped)
+    // 2 = Élargir la photo (stretched to touch every edge, nothing is cropped)
     function _fillMode() {
         switch (plasmoid.configuration.fillMode) {
         case 1: return Image.PreserveAspectCrop
         case 2: return Image.Stretch
         default: return Image.PreserveAspectFit
         }
+    }
+
+    // Outline of the glass: a rounded box whose corners are superellipses of
+    // exponent n (same maths as sceneSDFAndNormal() in liquidglass.frag), so the
+    // picture follows the glass edge exactly instead of a plain circular corner.
+    function _squirclePoints(w, h, radius, n) {
+        const r = Math.max(0, Math.min(radius, w / 2, h / 2))
+        if (w <= 0 || h <= 0 || r < 0.5)
+            return [Qt.point(0, 0), Qt.point(w, 0), Qt.point(w, h), Qt.point(0, h)]
+        const e = 2 / Math.max(n, 2)
+        const steps = 32
+        const cx = [w - r, r, r, w - r]
+        const cy = [r, r, h - r, h - r]
+        const pts = []
+        for (let q = 0; q < 4; q++) {
+            for (let i = 0; i <= steps; i++) {
+                const t = (q + i / steps) * Math.PI / 2
+                const c = Math.cos(t), s = Math.sin(t)
+                pts.push(Qt.point(cx[q] + r * Math.sign(c) * Math.pow(Math.abs(c), e),
+                                  cy[q] - r * Math.sign(s) * Math.pow(Math.abs(s), e)))
+            }
+        }
+        return pts
     }
 
     fullRepresentation: Item {
@@ -119,21 +146,33 @@ PlasmoidItem {
             }
         }
 
-        // Mask shape for the picture (same size as the picture area).
+        // Mask shape for the picture: the glass outline shrunk by the margin
+        // (same centre, radius reduced by the margin, same squircle exponent), so
+        // the picture reaches the glass corners instead of being rounded earlier.
         Item {
             id: frameMask
             visible: false
             layer.enabled: true
+            layer.samples: 4
             x: frame.x
             y: frame.y
             width: frame.width
             height: frame.height
 
-            Rectangle {
+            // The glass clamps its radius to half of the widget's smallest side.
+            readonly property real glassRadius: Math.max(0, Math.min(plasmoid.configuration.cornerRadius,
+                                                                      Math.min(full.width, full.height) / 2))
+            readonly property var outline: root._squirclePoints(width, height,
+                                                               glassRadius - full._margin,
+                                                               plasmoid.configuration.roundnessX10 / 10)
+
+            Shape {
                 anchors.fill: parent
-                color: "black"
-                radius: Math.max(0, Math.min(plasmoid.configuration.cornerRadius - full._margin,
-                                             Math.min(width, height) / 2))
+                ShapePath {
+                    fillColor: "black"
+                    strokeWidth: -1
+                    PathPolyline { path: frameMask.outline }
+                }
             }
         }
 

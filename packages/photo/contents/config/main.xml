@@ -50,7 +50,7 @@
         <entry name="imagePath" type="String">
             <default></default>
         </entry>
-        <!-- 0 = fit (whole picture), 1 = fill (crop), 2 = stretch -->
+        <!-- 0 = Entier (whole picture), 1 = Agrandi (enlarge + crop), 2 = Élargir la photo (stretch) -->
         <entry name="fillMode" type="Int">
             <default>0</default>
         </entry>
