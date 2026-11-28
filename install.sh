@@ -92,6 +92,12 @@ install_widget() {
 	_header "Installing: ${WIDGET_NAME}"
 	_divider
 
+	# The photo widget's shared symlinks cannot be uploaded through GitHub's web
+	# interface, so (re)create them here before installing.
+	if [[ "$WIDGET_NAME" == "photo" && -f "${SCRIPT_DIR}/link-photo.sh" ]]; then
+		bash "${SCRIPT_DIR}/link-photo.sh" >/dev/null || { _error "link-photo.sh failed"; return 1; }
+	fi
+
 	local widgetId
 	widgetId=$(jq -r ".KPlugin.Id" "$METADATA_FILE")
 
